@@ -1,0 +1,41 @@
+<!DOCTYPE RCC><RCC version="1.0">
+<qresource prefix="/">
+  <file>images/Restore.png</file>
+  <file>images/Quit.png</file>
+  <file>images/Remove.png</file>
+  <file>images/Edit.png</file>
+  <file>images/Add.png</file>
+  <file>images/Options.png</file>
+  <file>images/Bomb.png</file>
+  <file>images/About.png</file>
+  <file>images/Pencil.png</file>
+  <file>images/Pencil_gray.png</file>
+  <file>images/Note1.png</file>
+  <file>images/Note2.png</file>
+  <file>images/Note3.png</file>
+  <file>images/Note4.png</file>
+  <file>images/Note5.png</file>
+  <file>images/Note6.png</file>
+  <file>images/WindowsKey.png</file>
+  <file>images/WindowImage.png</file>
+  <file>images/RMFR.png</file>
+  <file>images/MaxFundNoKill.png</file>
+  <file>images/CatCareSociety.png</file>
+  <file>images/TheHumaneSociety.png</file>
+  <file>images/MainBanner.png</file>
+  <file>images/AddBanner.png</file>
+  <file>images/EditBanner.png</file>
+  <file>images/ExportBanner.png</file>
+  <file>images/MotherCatAndKitten.png</file>
+  <!-- Delete -->
+  <file>sounds/1.wav</file>
+  <!-- LMB -->
+  <file>sounds/2.wav</file>
+  <!-- Note Open -->
+  <file>sounds/3.wav</file>
+  <!-- Note Close -->
+  <file>sounds/4.wav</file>
+  <!-- Dropped -->
+  <file>sounds/5.wav</file>
+</qresource>
+</RCC>
