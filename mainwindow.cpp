@@ -243,12 +243,12 @@ void MainWindow::slot_housekeeping()
 
 void MainWindow::slot_tab_entered(NoteTab* id)
 {
-    add_log_entry(QString("Note: 0x%1").arg(reinterpret_cast<unsigned long>(id),8,16,QChar('0')), "Entered", "");
+    add_log_entry(QString("Note: 0x%1").arg(reinterpret_cast<size_t>(id),8,16,QChar('0')), "Entered", "");
 }
 
 void MainWindow::slot_tab_exited(NoteTab* id)
 {
-    add_log_entry(QString("Note: 0x%1").arg(reinterpret_cast<unsigned long>(id),8,16,QChar('0')), "Exited", "");
+    add_log_entry(QString("Note: 0x%1").arg(reinterpret_cast<size_t>(id),8,16,QChar('0')), "Exited", "");
 }
 
 void MainWindow::slot_tab_LMB_down(NoteTab* /*id*/, QMouseEvent* event)
@@ -355,7 +355,7 @@ void MainWindow::slot_tab_LMB_up(NoteTab* id, QMouseEvent* /*event*/)
 
     play_sound(SOUND_COPY);
 
-    add_log_entry(QString("Note: 0x%1").arg(reinterpret_cast<unsigned long>(id),8,16,QChar('0')), "Left Button", "");
+    add_log_entry(QString("Note: 0x%1").arg(reinterpret_cast<size_t>(id),8,16,QChar('0')), "Left Button", "");
 
     QClipboard* clipboard = qApp->clipboard();
     QDomElement note_node = id->get_note_node();
@@ -382,7 +382,7 @@ void MainWindow::slot_tab_RMB(NoteTab* id, QMouseEvent* event)
 {
     TabsListIter tabs_iter;
 
-    add_log_entry(QString("Note: 0x%1").arg(reinterpret_cast<unsigned long>(id),8,16,QChar('0')), "Right Button", "");
+    add_log_entry(QString("Note: 0x%1").arg(reinterpret_cast<size_t>(id),8,16,QChar('0')), "Right Button", "");
 
     if(!current_context)
         return;
@@ -1921,6 +1921,9 @@ void MainWindow::slot_show_database_context_menu(const QPoint &pos)
     {
         action = menu.addAction(QIcon(":/images/Remove.png"), tr("Remove Note"));
         connected = connect(action, &QAction::triggered, this, &MainWindow::slot_database_delete_note);
+
+        action = menu.addAction(QIcon(":/images/Edit.png"), tr("Copy to Clipboard"));
+        connected = connect(action, &QAction::triggered, this, &MainWindow::slot_database_copy_note);
     }
     ASSERT_UNUSED(connected);
 
@@ -1980,6 +1983,17 @@ void MainWindow::slot_database_delete_note()
     }
 
     save_note_database();
+}
+
+void MainWindow::slot_database_copy_note()
+{
+    play_sound(SOUND_COPY);
+
+    QDomNode dom_node = context_item->data(0, Qt::UserRole).value<QDomNode>();
+    QDomElement note_node = dom_node.toElement();
+
+    QClipboard* clipboard = qApp->clipboard();
+    clipboard->setText(note_node.firstChild().nodeValue());
 }
 
 void MainWindow::slot_edit_assign(QTreeWidgetItem* item, int col)
@@ -2059,6 +2073,8 @@ void MainWindow::slot_combo_changed(int index)
     }
     else
         context->id_is_expression = false;
+
+    dom_element.setAttribute("is_regexp", context->id_is_expression ? "1" : "0");
 
     combo->setCurrentIndex(context->id_is_expression ? COMBO_YES : COMBO_NO);
 

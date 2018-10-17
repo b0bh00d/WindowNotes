@@ -136,6 +136,7 @@ private slots:
 
     void            slot_database_delete_context();
     void            slot_database_delete_note();
+    void            slot_database_copy_note();
 
     void            slot_edit_assign(QTreeWidgetItem*, int);
     void            slot_edit_finished(QTreeWidgetItem*, int);

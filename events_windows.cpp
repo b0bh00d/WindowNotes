@@ -513,6 +513,7 @@ bool MainWindow::process_win_msg(MSG* msg, long* result)
                     break;
 
             case HSHELL_WINDOWACTIVATED:
+            case HSHELL_RUDEAPPACTIVATED:
                 focus_window_handle == win_id ? hide_notetabs() : delete_notetabs();
 
                 focus_window_handle = win_id;
