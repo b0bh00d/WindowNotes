@@ -388,7 +388,6 @@ void MainWindow::play_sound(int sound)
 
 void MainWindow::set_startup()
 {
-#ifdef _WIN32
     HKEY hkey;
 
     QString key_str = "Software\\Microsoft\\Windows\\CurrentVersion\\Run";
@@ -405,25 +404,24 @@ void MainWindow::set_startup()
         if(!path_str.startsWith('"'))
             path_str = QString("\"%1\"").arg(path_str);
 
-        if(RegOpenKeyEx(HKEY_CURRENT_USER,(LPCWSTR)key_str.toUtf8().constData(),0,KEY_ALL_ACCESS,&hkey) == ERROR_SUCCESS)
+        if(RegOpenKeyEx(HKEY_CURRENT_USER, AS_LPCWSTR(key_str), 0, KEY_SET_VALUE, &hkey) == ERROR_SUCCESS)
         {
             int len = path_str.size();
 #ifdef UNICODE
             len *= 2;
 #endif
-            RegSetValueEx(hkey,(LPCWSTR)label_str.toUtf8().constData(),0,REG_SZ,(const LPBYTE)path_str.utf16(),len);
+            RegSetValueEx(hkey,AS_LPCWSTR(label_str), 0, REG_SZ, AS_LPBYTE(path_str), len);
             RegCloseKey(hkey);
         }
     }
     else
     {
-        if(RegOpenKeyEx(HKEY_CURRENT_USER,(LPCWSTR)key_str.toUtf8().constData(),0,KEY_ALL_ACCESS,&hkey) == ERROR_SUCCESS)
+        if(RegOpenKeyEx(HKEY_CURRENT_USER, AS_LPCWSTR(key_str), 0, KEY_SET_VALUE, &hkey) == ERROR_SUCCESS)
         {
-            RegDeleteValue(hkey,(LPCWSTR)label_str.toUtf8().constData());
+            RegDeleteValue(hkey, AS_LPCWSTR(label_str));
             RegCloseKey(hkey);
         }
     }
-#endif
 }
 
 LPTSTR get_window_text(HWND win_id, int& text_length)
@@ -444,7 +442,7 @@ LPTSTR get_window_text(HWND win_id, int& text_length)
 void MainWindow::set_hooks()
 {
     QString msg("SHELLHOOK");
-    WM_SHELLHOOKMESSAGE = RegisterWindowMessage((wchar_t*)msg.utf16());
+    WM_SHELLHOOKMESSAGE = RegisterWindowMessage(AS_LPCWSTR(msg));
 
     HWND my_id = (HWND)winId();
     RegisterShellHookWindow(my_id);

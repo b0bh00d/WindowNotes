@@ -30,6 +30,9 @@
 #include "noteedit.h"
 #include "mimedata.h"
 
+#define AS_LPCWSTR(str) (const wchar_t*)str.utf16()
+#define AS_LPBYTE(str) (const LPBYTE)str.utf16()
+
 const int HousekeepingTimeout = 5000;
 
 class SoundLineEdit;
