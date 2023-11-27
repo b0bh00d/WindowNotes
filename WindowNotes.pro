@@ -1,4 +1,4 @@
-QT += widgets xml
+QT += widgets xml multimedia
 TARGET = WindowNotes
 TEMPLATE = app
 
@@ -10,6 +10,9 @@ mac {
 
 unix:!mac {
     DEFINES += QT_LINUX
+    #QT += x11extras
+    QMAKE_CXXFLAGS_WARN_ON += -Wno-reorder
+    #LIBS += -lX11
 }
 
 win32 {
@@ -23,6 +26,6 @@ OBJECTS_DIR = $$INTERMEDIATE_NAME/obj
 RCC_DIR = $$INTERMEDIATE_NAME/rcc
 UI_DIR = $$INTERMEDIATE_NAME/ui
 
-win32:RC_FILE = WindowNotes.rc
+win32: RC_FILE = WindowNotes.rc
 
 include(WindowNotes.pri)

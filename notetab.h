@@ -65,19 +65,19 @@ private slots:
     void    slot_reset_window_flags();
 
 private:    // data members
-    bool    entered;
-    double  selected_opacity;
-    double  unselected_opacity;
-    double  opacity;
-    double  opacity_slice;
-    bool    selected;
+    bool    entered{false};
+    double  selected_opacity{1.0};
+    double  unselected_opacity{0.3};
+    double  opacity{0.3};
+    double  opacity_slice{0.0};
+    bool    selected{false};
 
     QPoint  enter_point;
     int     my_icon;
     QDomElement my_note;
 
-    Qt::MouseButton event_button;
+    Qt::MouseButton event_button{Qt::NoButton};
 };
 
-typedef QList<NoteTab*>     TabsList;
-typedef TabsList::iterator  TabsListIter;
+using TabsList = QList<NoteTab*>;
+using TabsListIter = TabsList::iterator;

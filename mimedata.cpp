@@ -9,7 +9,7 @@ QStringList MimeData::formats() const
     return QMimeData::formats() << "text/plain" << "text/uri-list";
 }
 
-QVariant MimeData::retrieveData(const QString &mimeType, QVariant::Type type) const
+QVariant MimeData::retrieveData(const QString& mimeType, QVariant::Type type) const
 {
     emit dataRequested(mimeType);
 

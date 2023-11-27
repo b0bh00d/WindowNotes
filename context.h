@@ -18,7 +18,7 @@ struct Context
 public:
     QString         context_id;
     QRegExp         context_expr;
-    bool            id_is_expression;
+    bool            id_is_expression{false};
 
     QDomDocument*   my_doc;     // unfortunately, needed for createElement() and such
     QDomElement     my_node;
@@ -40,5 +40,5 @@ public:
     bool operator==(const QString& id) const { return context_id.compare(id) == 0; }
 };
 
-typedef QList<Context*>         ContextsList;
-typedef ContextsList::iterator  ContextsListIter;
+using ContextsList = QList<Context*>;
+using ContextsListIter = ContextsList::iterator;

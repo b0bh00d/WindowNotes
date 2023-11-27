@@ -1,8 +1,7 @@
 #include    "context.h"
 
 Context::Context(QDomDocument* doc, QDomElement node)
-    : id_is_expression(false),
-      my_doc(doc),
+    : my_doc(doc),
       my_node(node)
 {
     if(!my_node.isNull() && my_node.hasAttribute("id"))

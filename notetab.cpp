@@ -1,5 +1,7 @@
+#ifdef QT_WIN
 #define WIN32_MEAN_AND_LEAN //necessary to avoid compiler errors
 #include <windows.h>
+#endif
 
 #include <QtWidgets/QToolTip>
 #include <QtCore/QTimer>
@@ -8,24 +10,17 @@
 #include "notetab.h"
 
 NoteTab::NoteTab(int icon, QWidget* parent, Qt::WindowFlags f)
-    : entered(false),
-      selected_opacity(1.0),
-      unselected_opacity(0.3),
-      opacity(0.3),
-      opacity_slice(0.0),
-      selected(false),
-      my_icon(icon),
-      event_button(Qt::NoButton),
+    : my_icon(icon),
       QWidget(parent, f)
 {
     setAttribute(Qt::WA_AlwaysShowToolTips);
     setAttribute(Qt::WA_TranslucentBackground);
 
-    QPixmap pencil_bitmap = QPixmap(QString(":/images/Note%1.png").arg(my_icon)).scaled(NOTE_DOCK_SIZE, NOTE_DOCK_SIZE);
-    setMask(pencil_bitmap.mask());
+    QPixmap tab_bitmap = QPixmap(QString(":/images/Note%1.png").arg(my_icon)).scaled(NOTE_DOCK_SIZE, NOTE_DOCK_SIZE);
+    setMask(tab_bitmap.mask());
 
     QPalette* palette = new QPalette();
-    palette->setBrush(QPalette::Background, QBrush(pencil_bitmap));
+    palette->setBrush(QPalette::Background, QBrush(tab_bitmap));
     setPalette(*palette);
 }
 
@@ -35,8 +30,10 @@ NoteTab::~NoteTab()
 
 void NoteTab::showEvent(QShowEvent* /*event*/)
 {
+#ifdef QT_WIN
     // make sure the tab is always visible when it is made visible
     SetWindowPos((HWND)this->winId(), HWND_TOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE);
+#endif
 
     QWidget::show();
 
@@ -85,8 +82,8 @@ void NoteTab::paintEvent(QPaintEvent* /*paintEvent*/)
     painter.setPen(Qt::NoPen);
     painter.setOpacity(opacity);
 
-    QPixmap pencil_bitmap = QPixmap(QString(":/images/Note%1.png").arg(my_icon)).scaled(NOTE_DOCK_SIZE, NOTE_DOCK_SIZE);
-    painter.drawPixmap(0, 0, pencil_bitmap);
+    QPixmap tab_bitmap = QPixmap(QString(":/images/Note%1.png").arg(my_icon)).scaled(NOTE_DOCK_SIZE, NOTE_DOCK_SIZE);
+    painter.drawPixmap(0, 0, tab_bitmap);
 }
 
 void NoteTab::enterEvent(QEvent* /*event*/)
@@ -174,5 +171,7 @@ void NoteTab::slot_fade()
 
 void NoteTab::slot_reset_window_flags()
 {
+#ifdef QT_WIN
     SetWindowPos((HWND)this->winId(), HWND_NOTOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE);
+#endif
 }

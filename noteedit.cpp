@@ -1,4 +1,5 @@
-#include <QTimer>
+#include <QtCore/QTimer>
+#include <QtCore/QEvent>
 #include <QtWidgets/QLineEdit>
 
 #include "mainwindow.h"

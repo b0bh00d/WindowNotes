@@ -11,6 +11,8 @@
 #include <QtCore/QDir>
 #include <QtCore/QSettings>
 #include <QtCore/QProcess>
+#include <QtCore/QRandomGenerator>
+#include <QtCore/QStandardPaths>
 
 #include "mainwindow.h"
 #include "ui_mainwindow.h"
@@ -21,49 +23,20 @@ static const QString& settings_version = "1.0";
 MainWindow* main_window = nullptr;
 
 MainWindow::MainWindow(QWidget *parent)
-    : trayIconMenu(0),
-      keyboard_hook_handle(0),
-      add_hook_key(DEFAULT_ADD_KEY),
-      window_geometry_save_enabled(true),
-      focus_window_handle(0),
-      current_context(0),
-      in_context_menu(false),
-      notetab_clicked(false),
-      enable_sound_effects(true),
-      selected_opacity(1.0),
-      unselected_opacity(0.3),
-      note_edit_window(0),
-      note_database(0),
-      note_clipboard(0),
-      next_tab_icon(1),
-      backup_database(true),
-      max_backups(5),
-      start_automatically(false),
-      in_validate_key(false),
-      settings_modified(false),
-      notes_modified(false),
-      tab_animating(false),
-      favored_side(FAVOR_LEFT),
-      clipboard_ttl(false),
-      clipboard_ttl_timeout(0),
-      clipboard_timer(0),
-      clipboard_timestamp(0),
-      paste_action(0),
-      did_drag_and_drop(false),
-      QMainWindow(parent),
+    : QMainWindow(parent),
       ui(new Ui::MainWindow)
 {
-    QTime time = QTime::currentTime();
-    qsrand((uint)time.msec());
+//    QTime time = QTime::currentTime();
+//    qsrand((uint)time.msec());
 
     // perform operating system-specific initializations
-    events_init();
+    os_events_init();
 
     main_window = this;
 
     ui->setupUi(this);
 
-    if(locate_instance())
+    if(os_locate_instance())
     {
         QMessageBox::warning(window(), tr("WindowNotes"),
                                  tr("An instance of WindowNotes is already running."));
@@ -80,13 +53,17 @@ MainWindow::MainWindow(QWidget *parent)
     load_application_settings();
     load_note_database();
 
-
     bool connected;
 
     // Settings
 
+#ifdef QT_WIN
     connected = connect(ui->edit_Add_Key, &QLineEdit::textChanged, this, &MainWindow::slot_validate_add_key);
     ASSERT_UNUSED(connected);
+#endif
+#ifdef QT_LINUX
+    ui->edit_Add_Key->setEnabled(false);
+#endif
 
     connected = connect(ui->check_Start_Automatically, &QCheckBox::stateChanged, this, &MainWindow::slot_toggle_startup);
     ASSERT_UNUSED(connected);
@@ -227,8 +204,11 @@ MainWindow::MainWindow(QWidget *parent)
 
     cache_sounds();
 
+#ifdef QT_WIN
     hook_global_keyboard_event();
-    set_hooks();
+#endif
+
+    os_set_hooks();
 }
 
 MainWindow::~MainWindow()
@@ -318,21 +298,31 @@ void MainWindow::slot_tab_LMB_move(NoteTab* id, QMouseEvent* event)
     drag->setMimeData(drag_mime_data);
     drag->setPixmap(QPixmap(QString(":/images/Note%1.png").arg(id->get_note_icon())).scaled(NOTE_DOCK_SIZE, NOTE_DOCK_SIZE));
 
+#ifdef QT_WIN
     unhook_global_keyboard_event();
     unhook_global_win_event();
+#endif
+#ifdef QT_LINUX
+    lnx_ignore_events();
+#endif
 
     hide_notetabs();
 
     drag_temp_files.clear();
 
     if(drag->exec(Qt::CopyAction) == Qt::CopyAction)
-        play_sound(SOUND_DROPPED);  // the drop was accepted somewhere
+        os_play_sound(SOUND_DROPPED);  // the drop was accepted somewhere
 
     foreach(NoteTab* key, drag_temp_files.keys())
         QFile::remove(drag_temp_files[key]);
 
+#ifdef QT_WIN
     hook_global_win_event();
     hook_global_keyboard_event();
+#endif
+#ifdef QT_LINUX
+    lnx_regard_events();
+#endif
 
     // NOTE: these calls to arrange and display will render the 'id' pointer
     // parameter invalid.  DO NOT USE IT AFTERWARD!
@@ -353,7 +343,7 @@ void MainWindow::slot_tab_LMB_up(NoteTab* id, QMouseEvent* /*event*/)
     if(did_drag_and_drop)
         return;
 
-    play_sound(SOUND_COPY);
+    os_play_sound(SOUND_COPY);
 
     add_log_entry(QString("Note: 0x%1").arg(reinterpret_cast<size_t>(id),8,16,QChar('0')), "Left Button", "");
 
@@ -426,7 +416,7 @@ void MainWindow::slot_tab_RMB(NoteTab* id, QMouseEvent* event)
             tab_animating = true;
             current_tab->fade();
 
-            play_sound(SOUND_DELETE);
+            os_play_sound(SOUND_DELETE);
 
             break;
 
@@ -463,7 +453,7 @@ void MainWindow::slot_tab_RMB(NoteTab* id, QMouseEvent* event)
                 nt->fade();
             }
 
-            play_sound(SOUND_DELETE);
+            os_play_sound(SOUND_DELETE);
             break;
 
         case NOTEACTION_NONE:
@@ -585,9 +575,15 @@ void MainWindow::slot_edit_note()
     bool connected = connect(note_edit_window, &NoteEdit::signal_lost_focus, this, &MainWindow::slot_close_edit_window);
     ASSERT_UNUSED(connected);
 
-    play_sound(SOUND_NOTEOPEN);
+    os_play_sound(SOUND_NOTEOPEN);
     note_edit_window->show();
+#ifdef QT_WIN
     make_active_window(note_edit_window->winId());
+#endif
+#ifdef QT_LINUX
+    note_edit_window->raise();
+    note_edit_window->setFocus();
+#endif
 }
 
 void MainWindow::slot_close_edit_window()
@@ -605,7 +601,7 @@ void MainWindow::slot_close_edit_window()
 
     note_edit_window->close();
 
-    play_sound(SOUND_NOTECLOSE);
+    os_play_sound(SOUND_NOTECLOSE);
 
     note_edit_window->deleteLater();
     note_edit_window = (NoteEdit*)0;
@@ -775,9 +771,21 @@ NoteTab* MainWindow::add_notetab(int icon)
     return nt;
 }
 
+NoteTab* MainWindow::append_addtab()
+{
+    NoteTab* nt = new NoteTab(9999, this);
+    nt->set_opacities(selected_opacity, unselected_opacity);
+    bool connected = connect(nt, &NoteTab::signal_tab_LMB_up, this, &MainWindow::slot_process_add);
+    return nt;
+}
+
 int MainWindow::arrange_notetabs(bool hide_and_show)
 {
-    if(tab_animating || !focus_window_handle || !current_context || isVisible())
+    if(tab_animating
+#ifdef QT_WIN
+        || !focus_window_handle
+#endif
+        || !current_context || isVisible())
         return 0;
 
     QBitArray sides(4);
@@ -786,22 +794,39 @@ int MainWindow::arrange_notetabs(bool hide_and_show)
     QRect r = desk.screenGeometry();
 #ifdef QT_WIN
     GetWindowRect(focus_window_handle, (LPRECT)&focus_window_rect);
+
+    auto win_left = focus_window_rect.left;
+    auto win_bottom = focus_window_rect.bottom;
+    auto win_right = focus_window_rect.right;
+    auto win_top = focus_window_rect.top;
+#endif
+#ifdef QT_LINUX
+    auto win_left = focus_window_rect.left();
+    auto win_bottom = focus_window_rect.bottom();
+    auto win_right = focus_window_rect.right();
+    auto win_top = focus_window_rect.top();
 #endif
 
-    if((focus_window_rect.left - NOTE_OFFSET - NOTE_DOCK_SIZE) > 0)
+    if((win_left - NOTE_OFFSET - NOTE_DOCK_SIZE) > 0)
         sides.setBit(SIDE_LEFT, true);
-    if((focus_window_rect.bottom + NOTE_OFFSET + NOTE_DOCK_SIZE) < r.height())
+    if((win_bottom + NOTE_OFFSET + NOTE_DOCK_SIZE) < r.height())
         sides.setBit(SIDE_BOTTOM, true);
-    if((focus_window_rect.right + NOTE_OFFSET + NOTE_DOCK_SIZE) < r.width())
+    if((win_right + NOTE_OFFSET + NOTE_DOCK_SIZE) < r.width())
         sides.setBit(SIDE_RIGHT, true);
-    if((focus_window_rect.top - NOTE_OFFSET - NOTE_DOCK_SIZE) > 0)
+    if((win_top - NOTE_OFFSET - NOTE_DOCK_SIZE) > 0)
         sides.setBit(SIDE_TOP, true);
 
     if(!sides.count(true))
         return 0;
 
+#ifdef QT_WIN
     int left_count = (focus_window_rect.bottom - focus_window_rect.top) / (NOTE_DOCK_SIZE + 5);
     int bottom_count = (focus_window_rect.right - focus_window_rect.left) / (NOTE_DOCK_SIZE + 5);
+#endif
+#ifdef QT_LINUX
+    int left_count = (focus_window_rect.bottom() - focus_window_rect.top()) / (NOTE_DOCK_SIZE + 5);
+    int bottom_count = (focus_window_rect.right() - focus_window_rect.left()) / (NOTE_DOCK_SIZE + 5);
+#endif
 
     int rotation[] = { SIDE_LEFT, SIDE_BOTTOM, SIDE_RIGHT, SIDE_TOP };
     int direction[] = { 1, 1, -1, -1 };
@@ -825,7 +850,8 @@ int MainWindow::arrange_notetabs(bool hide_and_show)
 
     delete_notetabs();
 
-    int max_notes = current_context->note_count();
+    int max_notes = current_context->note_count() /* include the add tab */ + 1;
+    int add_tab = max_notes;
     int note_index = 0;
 
     for(int i = 0; i < 4;i++)
@@ -839,37 +865,37 @@ int MainWindow::arrange_notetabs(bool hide_and_show)
             switch(rotation[i])
             {
                 case SIDE_LEFT:
-                    left = focus_window_rect.left - NOTE_OFFSET - NOTE_DOCK_SIZE;
+                    left = win_left - NOTE_OFFSET - NOTE_DOCK_SIZE;
                     left_increment = 0;
-                    top = (direction[i] == 1) ? (focus_window_rect.top + NOTE_MARGIN) : (focus_window_rect.bottom - NOTE_DOCK_SIZE);
+                    top = (direction[i] == 1) ? (win_top + NOTE_MARGIN) : (win_bottom - NOTE_DOCK_SIZE);
                     top_increment = NOTE_DOCK_SIZE + NOTE_MARGIN;
                     top_increment *= direction[i];
                     side_max = left_count;
                     break;
 
                 case SIDE_TOP:
-                    left = (direction[i] == 1) ? (focus_window_rect.left + NOTE_MARGIN) : (focus_window_rect.right - NOTE_DOCK_SIZE);
+                    left = (direction[i] == 1) ? (win_left + NOTE_MARGIN) : (win_right - NOTE_DOCK_SIZE);
                     left_increment = NOTE_DOCK_SIZE + NOTE_MARGIN;
                     left_increment *= direction[i];
-                    top = focus_window_rect.top - NOTE_OFFSET - NOTE_DOCK_SIZE;
+                    top = win_top - NOTE_OFFSET - NOTE_DOCK_SIZE;
                     top_increment = 0;
                     side_max = bottom_count;
                     break;
 
                 case SIDE_RIGHT:
-                    left = focus_window_rect.right + NOTE_OFFSET;
+                    left = win_right + NOTE_OFFSET;
                     left_increment = 0;
-                    top = (direction[i] == 1) ? (focus_window_rect.top + NOTE_MARGIN) : (focus_window_rect.bottom - NOTE_DOCK_SIZE);
+                    top = (direction[i] == 1) ? (win_top + NOTE_MARGIN) : (win_bottom - NOTE_DOCK_SIZE);
                     top_increment = NOTE_DOCK_SIZE + NOTE_MARGIN;
                     top_increment *= direction[i];
                     side_max = left_count;
                     break;
 
                 case SIDE_BOTTOM:
-                    left = (direction[i] == 1) ? (focus_window_rect.left + NOTE_MARGIN) : (focus_window_rect.right - NOTE_DOCK_SIZE);
+                    left = (direction[i] == 1) ? (win_left + NOTE_MARGIN) : (win_right - NOTE_DOCK_SIZE);
                     left_increment = NOTE_DOCK_SIZE + NOTE_MARGIN;
                     left_increment *= direction[i];
-                    top = focus_window_rect.bottom + NOTE_OFFSET;
+                    top = win_bottom + NOTE_OFFSET;
                     top_increment = 0;
                     side_max = bottom_count;
                     break;
@@ -877,9 +903,14 @@ int MainWindow::arrange_notetabs(bool hide_and_show)
 
             while(note_index < max_notes && note_index < maxtabs && side_max)
             {
-                NoteTab* nt = add_notetab(current_context->get_icon());
+                NoteTab* nt{nullptr};
+                if(note_index == add_tab)
+                    nt = append_addtab();
+                else
+                    nt = add_notetab(current_context->get_icon());
                 nt->setGeometry(left, top, NOTE_DOCK_SIZE, NOTE_DOCK_SIZE);
-                nt->set_note_node(current_context->get_note(note_index).toElement());
+                if(note_index != add_tab)
+                    nt->set_note_node(current_context->get_note(note_index).toElement());
                 hide_and_show ? nt->show() : nt->hide();
 
                 tabs_list->append(nt);
@@ -899,9 +930,14 @@ int MainWindow::arrange_notetabs(bool hide_and_show)
 
 void MainWindow::slot_quit()
 {
+#ifdef QT_WIN
     unhook_global_keyboard_event();
     unhook_global_win_event();
     DeregisterShellHookWindow((HWND)winId());
+#endif
+#ifdef QT_LINUX
+    lnx_ignore_events();
+#endif
 
     if(note_clipboard)
         delete note_clipboard;
@@ -956,7 +992,12 @@ void MainWindow::closeEvent(QCloseEvent* event)
 
         disconnect(ui->tree_Database, &QTreeWidget::itemChanged, this, &MainWindow::slot_edit_finished);
 
+#ifdef QT_WIN
         hook_global_keyboard_event();
+#endif
+#ifdef QT_LINUX
+        lnx_regard_events();
+#endif
         event->ignore();
     }
 }
@@ -1013,14 +1054,20 @@ int MainWindow::ask_question(const QString& question, bool with_cancel, const QS
     return result;
 }
 
+#ifdef QT_WIN
 QChar MainWindow::get_add_key() const
 {
     return add_hook_key;
 }
+#endif
 
 void MainWindow::process_add()
 {
-    if(focus_window_handle == (HWND)winId() || focus_window_title.isEmpty())
+    if(
+#ifdef QT_WIN
+    focus_window_handle == (HWND)winId() ||
+#endif
+    focus_window_title.isEmpty())
         return;
 
     QTimer::singleShot(100, this, &MainWindow::slot_process_add);
@@ -1028,7 +1075,12 @@ void MainWindow::process_add()
 #include <QThread>
 void MainWindow::slot_process_add()
 {
+#ifdef QT_WIN
     unhook_global_keyboard_event();
+#endif
+#ifdef QT_LINUX
+    lnx_ignore_events();
+#endif
     hide_notetabs();
 
     if(note_edit_window)
@@ -1058,14 +1110,30 @@ void MainWindow::slot_process_add()
     note_edit_window->set_note_data(note_data);
 
     const QRect& r = note_edit_window->geometry();
-    note_edit_window->setGeometry(focus_window_rect.left + 10, focus_window_rect.top + 20, r.width(), r.height());
+
+#ifdef QT_WIN
+    auto win_left = focus_window_rect.left;
+    auto win_top = focus_window_rect.top;
+#endif
+#ifdef QT_LINUX
+    auto win_left = focus_window_rect.left();
+    auto win_top = focus_window_rect.top();
+#endif
+
+    note_edit_window->setGeometry(win_left + 10, win_top + 20, r.width(), r.height());
     note_edit_window->setFixedSize(r.width(), r.height());
     bool connected = connect(note_edit_window, &NoteEdit::signal_lost_focus, this, &MainWindow::slot_close_add_window);
     ASSERT_UNUSED(connected);
 
-    play_sound(SOUND_NOTEOPEN);
+    os_play_sound(SOUND_NOTEOPEN);
     note_edit_window->show();
+#ifdef QT_WIN
     make_active_window(note_edit_window->winId());
+#endif
+#ifdef QT_LINUX
+    note_edit_window->raise();
+    note_edit_window->setFocus();
+#endif
 }
 
 void MainWindow::slot_close_add_window()
@@ -1075,7 +1143,7 @@ void MainWindow::slot_close_add_window()
 
     note_edit_window->close();
 
-    play_sound(SOUND_NOTECLOSE);
+    os_play_sound(SOUND_NOTECLOSE);
 
     note_edit_window->deleteLater();
     note_edit_window = (NoteEdit*)0;
@@ -1109,7 +1177,12 @@ void MainWindow::slot_close_add_window()
     arrange_notetabs();
     display_notetabs();
 
+#ifdef QT_WIN
     hook_global_keyboard_event();
+#endif
+#ifdef QT_LINUX
+    lnx_regard_events();
+#endif
 }
 
 void MainWindow::slot_edit_options()
@@ -1120,7 +1193,12 @@ void MainWindow::slot_edit_options()
 
 void MainWindow::slot_restore()
 {
+#ifdef QT_WIN
     unhook_global_keyboard_event();
+#endif
+#ifdef QT_LINUX
+    lnx_ignore_events();
+#endif
 
     populate_note_tree();
     bool connected = connect(ui->tree_Database, &QTreeWidget::itemChanged, this, &MainWindow::slot_edit_finished);
@@ -1256,13 +1334,16 @@ void MainWindow::load_application_settings()
     window_data.clear();
 
     QString settings_file_name;
-    settings_file_name = QDir::toNativeSeparators(QString("%1/WindowNotes/WindowNotes.ini").arg(qgetenv("APPDATA").constData()));
+    auto config_location = QStandardPaths::standardLocations(QStandardPaths::AppConfigLocation);
+    settings_file_name = QDir::toNativeSeparators(QString("%1/WindowNotes.ini").arg(config_location[0]));
     QSettings settings(settings_file_name, QSettings::IniFormat);
 
     next_tab_icon       = settings.value("next_tab_icon", next_tab_icon).toInt();
     backup_database     = settings.value("backup_database", backup_database).toBool();
     max_backups         = settings.value("max_backups", max_backups).toUInt();
+#ifdef QT_WIN
     add_hook_key        = settings.value("add_hook_key", add_hook_key).toChar().toLatin1();
+#endif
     start_automatically = settings.value("start_automatically", start_automatically).toBool();
     selected_opacity    = settings.value("selected_opacity", selected_opacity).toDouble();
     unselected_opacity  = settings.value("unselected_opacity", unselected_opacity).toDouble();
@@ -1301,7 +1382,9 @@ void MainWindow::load_application_settings()
     settings.endArray();
 
     ui->check_Start_Automatically->setChecked(start_automatically);
+#ifdef QT_WIN
     ui->edit_Add_Key->setText(QString(add_hook_key));
+#endif
     ui->spin_Selected_Opacity->setValue((int)(selected_opacity * 100.0));
     ui->spin_Unselected_Opacity->setValue((int)(unselected_opacity * 100.0));
 
@@ -1321,7 +1404,7 @@ void MainWindow::load_application_settings()
             break;
     }
 
-    set_startup();
+        os_set_startup();
 
     settings_modified = !QFile::exists(settings_file_name);
 }
@@ -1329,7 +1412,8 @@ void MainWindow::load_application_settings()
 void MainWindow::save_application_settings()
 {
     QString settings_file_name;
-    settings_file_name = QDir::toNativeSeparators(QString("%1/WindowNotes/WindowNotes.ini").arg(qgetenv("APPDATA").constData()));
+    auto config_location = QStandardPaths::standardLocations(QStandardPaths::AppConfigLocation);
+    settings_file_name = QDir::toNativeSeparators(QString("%1/WindowNotes.ini").arg(config_location[0]));
     QSettings settings(settings_file_name, QSettings::IniFormat);
 
     settings.clear();
@@ -1337,7 +1421,9 @@ void MainWindow::save_application_settings()
     settings.setValue("next_tab_icon", next_tab_icon);
     settings.setValue("backup_database", backup_database);
     settings.setValue("max_backups", max_backups);
+#ifdef QT_WIN
     settings.setValue("add_hook_key", QChar(add_hook_key));
+#endif
     settings.setValue("start_automatically", start_automatically);
     settings.setValue("selected_opacity", selected_opacity);
     settings.setValue("unselected_opacity", unselected_opacity);
@@ -1389,7 +1475,8 @@ void MainWindow::load_note_database()
     note_database->insertBefore(node, note_database->firstChild());
 
     QString database_file_name;
-    database_file_name = QDir::toNativeSeparators(QString("%1/WindowNotes/WindowNotes.xml").arg(qgetenv("APPDATA").constData()));
+    auto config_location = QStandardPaths::standardLocations(QStandardPaths::AppConfigLocation);
+    database_file_name = QDir::toNativeSeparators(QString("%1/WindowNotes.xml").arg(config_location[0]));
 
     QFile file(database_file_name);
     if(!file.open(QIODevice::ReadOnly | QIODevice::Text))
@@ -1493,7 +1580,8 @@ void MainWindow::save_note_database()
 {
     const int IndentSize = 2;
 
-    QString database_file_name = QDir::toNativeSeparators(QString("%1/WindowNotes/WindowNotes.xml").arg(qgetenv("APPDATA").constData()));
+    auto config_location = QStandardPaths::standardLocations(QStandardPaths::AppConfigLocation);
+    QString database_file_name = QDir::toNativeSeparators(QString("%1/WindowNotes.xml").arg(config_location[0]));
 
     // if directed, make a backup before we overwrite it, and
     // then remove the backup if the write is successful
@@ -1523,6 +1611,7 @@ void MainWindow::save_note_database()
     notes_modified = false;
 }
 
+#ifdef QT_WIN
 void MainWindow::slot_validate_add_key()
 {
     if(in_validate_key)
@@ -1530,7 +1619,8 @@ void MainWindow::slot_validate_add_key()
 
     in_validate_key = true;
 
-    add_hook_key = ui->edit_Add_Key->text()[0].toUpper();
+    auto t = ui->edit_Add_Key->text();
+    add_hook_key = t[0].toUpper();
     ui->edit_Add_Key->clear();
 
     ui->edit_Add_Key->setText(add_hook_key);
@@ -1540,6 +1630,7 @@ void MainWindow::slot_validate_add_key()
 
     in_validate_key = false;
 }
+#endif
 
 void MainWindow::slot_toggle_startup()
 {
@@ -1548,7 +1639,7 @@ void MainWindow::slot_toggle_startup()
         return;
 
     start_automatically = new_start;
-    set_startup();
+    os_set_startup();
 
     save_application_settings();
 }
@@ -1987,7 +2078,7 @@ void MainWindow::slot_database_delete_note()
 
 void MainWindow::slot_database_copy_note()
 {
-    play_sound(SOUND_COPY);
+    os_play_sound(SOUND_COPY);
 
     QDomNode dom_node = context_item->data(0, Qt::UserRole).value<QDomNode>();
     QDomElement note_node = dom_node.toElement();

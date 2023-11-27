@@ -24,6 +24,12 @@
 #include <QtCore/QByteArray>
 #include <QtCore/QTimer>
 
+#ifdef QT_LINUX
+// #include <X11/Xlib.h>
+// #include <X11/Xutil.h>
+#include "linux/WindowEvents.h"
+#endif
+
 #include "types.h"
 #include "context.h"
 #include "notetab.h"
@@ -100,7 +106,9 @@ private slots:
     void            slot_clear_database();
 
     void            slot_about();
+#ifdef QT_WIN
     void            slot_validate_add_key();
+#endif
     void            slot_toggle_startup();
     void            slot_selected_opacity_changed();
     void            slot_unselected_opacity_changed();
@@ -145,12 +153,17 @@ private slots:
     void            slot_edit_finished(QTreeWidgetItem*, int);
     void            slot_combo_changed(int);
 
+#ifdef QT_LINUX
+    void    slot_thread_error(QByteArray);
+    void    slot_window_event(WindowEvents::Action, WindowEvents::WindowData);
+#endif
+
 private:    // typedefs and enums
-    typedef QMap<QString, QByteArray>   WindowData;
-    typedef QMap<QString, bool>         AuthenticateContext;
-    typedef QMap<int, QString>          CommandMap;
-    typedef QTreeWidgetItem*            TreeItem;
-    typedef QMap<QComboBox*, QTreeWidgetItem*>  ContextMap;
+    using WindowData = QMap<QString, QByteArray>;
+    using AuthenticateContext = QMap<QString, bool>;
+    using CommandMap = QMap<int, QString>;
+    using TreeItem = QTreeWidgetItem*;
+    using ContextMap = QMap<QComboBox*, QTreeWidgetItem*>;
 
     enum
     {
@@ -208,9 +221,15 @@ private:    // typedefs and enums
     };
 
 private:    // methods
-    void            events_init();
+    bool            os_events_init();
+    void            os_events_cleanup();
+    bool            os_locate_instance();
+    void            os_play_sound(int sound);
+    void            os_set_startup();
+    void            os_set_hooks();
 
     NoteTab*        add_notetab(int icon);
+    NoteTab*        append_addtab();
     int             arrange_notetabs(bool hide_and_show=false);
     void            hide_notetabs();
     void            delete_notetabs();
@@ -235,14 +254,10 @@ private:    // methods
 
     Context*        locate_context(bool literal = false);
     Context*        locate_context(const QString& context_id);
-    bool            locate_instance();
-    void            play_sound(int sound);
-
-    void            set_startup();
-    void            set_hooks();
 
     void            populate_note_tree();
 
+#ifdef QT_WIN
     void            hook_global_keyboard_event();
     void            unhook_global_keyboard_event();
 
@@ -250,90 +265,102 @@ private:    // methods
     void            unhook_global_win_event();
 
     void            make_active_window(WId win_id);
+#endif
+#ifdef QT_LINUX
+    void            lnx_ignore_events();
+    void            lnx_regard_events();
+#endif
 
 private:    // data members
     Ui::MainWindow*     ui;
 
-    QSystemTrayIcon*    trayIcon;
-    QMenu*              trayIconMenu;
+    QSystemTrayIcon*    trayIcon{nullptr};
+    QMenu*              trayIconMenu{nullptr};
 
-    QAction*            about_action;
-    QAction*            options_action;
-    QAction*            quit_action;
-    QAction*            copy_action;
-    QAction*            paste_action;
+    QAction*            about_action{nullptr};
+    QAction*            options_action{nullptr};
+    QAction*            quit_action{nullptr};
+    QAction*            copy_action{nullptr};
+    QAction*            paste_action{nullptr};
 
-    QAction*            toolbar_add_action;
-    QAction*            toolbar_edit_action;
-    QAction*            toolbar_remove_action;
+    QAction*            toolbar_add_action{nullptr};
+    QAction*            toolbar_edit_action{nullptr};
+    QAction*            toolbar_remove_action{nullptr};
 
     QPoint              event_pos;
 
 #ifdef QT_WIN
-    HHOOK               keyboard_hook_handle;
-    HHOOK               mouse_hook_handle;
-    HHOOK               shell_hook_handle;
-    HHOOK               cbt_hook_handle;
-    HWINEVENTHOOK       win_movesize_hook_handle;
-    HWINEVENTHOOK       win_minimize_hook_handle;
-    HWND                focus_window_handle;
-    RECT                focus_window_rect;
+    HHOOK               keyboard_hook_handle{0};
+    HHOOK               mouse_hook_handle{0};
+    HHOOK               shell_hook_handle{0};
+    HHOOK               cbt_hook_handle{0};
+    HWINEVENTHOOK       win_movesize_hook_handle{0};
+    HWINEVENTHOOK       win_minimize_hook_handle{0};
+    HWND                focus_window_handle{0};
+    RECT                focus_window_rect{0};
     unsigned int        WM_SHELLHOOKMESSAGE;
     CommandMap          shell_command_map;
-#endif
 
-    QChar               add_hook_key;
+    QChar               add_hook_key{DEFAULT_ADD_KEY};
+#endif
+#ifdef QT_LINUX
+    WindowEventsPtr     m_window_events;
+
+    bool                report_events{true};
+    int                 focus_window_handle{0};
+    QRect               focus_window_rect;
+#endif
 
     WindowData          window_data;
 
-    bool                window_geometry_save_enabled;
+    bool                window_geometry_save_enabled{true};
 
     QString             focus_window_title;
 
-    TabsList*           tabs_list;
-    NoteTab*            current_tab;
+    TabsList*           tabs_list{nullptr};
+    NoteTab*            current_tab{nullptr};
     int                 note_action;
 
-    Context*            current_context;
+    Context*            current_context{nullptr};
     ContextsList        contexts_list;
 
-    bool                in_context_menu;
-    bool                notetab_clicked;
-    bool                enable_sound_effects;
+    bool                in_context_menu{false};
+    bool                notetab_clicked{false};
+    bool                enable_sound_effects{true};
 
-    double              selected_opacity, unselected_opacity;
+    double              selected_opacity{1.0}, unselected_opacity{0.3};
 
-    NoteEdit*           note_edit_window;
+    NoteEdit*           note_edit_window{nullptr};
 
-    QDomDocument*       note_database;
-    NoteData*           note_clipboard;
+    QDomDocument*       note_database{nullptr};
+    NoteData*           note_clipboard{nullptr};
 
-    int                 next_tab_icon;
+    int                 next_tab_icon{1};
 
-    bool                backup_database;
-    int                 max_backups;
+    bool                backup_database{true};
+    int                 max_backups{5};
 
-    bool                start_automatically;
+    bool                start_automatically{false};
 
-    bool                in_validate_key;
+    bool                in_validate_key{false};
 
-    bool                settings_modified;
-    bool                notes_modified;
+    bool                settings_modified{false};
+    bool                notes_modified{false};
 
-    bool                tab_animating;
+    bool                tab_animating{false};
 
-    int                 favored_side;
+    int                 favored_side{FAVOR_LEFT};
 
-    bool                clipboard_ttl;
-    int                 clipboard_ttl_timeout;
-    QTimer*             clipboard_timer;
-    qint64              clipboard_timestamp;
+    bool                clipboard_ttl{false};
+    int                 clipboard_ttl_timeout{0};
+    QTimer*             clipboard_timer{nullptr};
+    qint64              clipboard_timestamp{0};
 
     QPoint              drag_start_position;
-    NoteTab*            drag_notetab_id;
-    MimeData*           drag_mime_data;
+    NoteTab*            drag_notetab_id{nullptr};
+    MimeData*           drag_mime_data{nullptr};
     QMap<NoteTab*, QString>    drag_temp_files;
-    bool                did_drag_and_drop;
+    bool                did_drag_and_drop{false};
 
     QVector<QString>    sound_files;
     QVector<QByteArray> sound_cache;

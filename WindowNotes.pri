@@ -17,7 +17,19 @@ SOURCES += main.cpp \
            exportdialog.cpp \
            mimedata.cpp \
 
-win32: SOURCES += events_windows.cpp
+win32 {
+    SOURCES += windows/events.cpp
+}
+
+unix:!mac {
+    HEADERS += linux/events.h \
+               linux/Queue.h \
+               linux/WindowEvents.h \
+               linux/ActiveWindow.h
+    SOURCES += linux/events.cpp \
+               linux/WindowEvents.cpp \
+               linux/ActiveWindow.cpp
+}
 
 FORMS += mainwindow.ui \
          noteedit.ui \

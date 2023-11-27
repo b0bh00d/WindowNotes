@@ -12,7 +12,7 @@ typedef QVector<HWND>           WinList;
 typedef WinList::iterator       WinListIter;
 typedef WinList::const_iterator WinListConstIter;
 
-void MainWindow::events_init()
+bool MainWindow::os_events_init()
 {
     focus_window_handle = GetTopWindow(NULL);
 
@@ -271,7 +271,11 @@ void MainWindow::events_init()
 #endif
     shell_command_map[HSHELL_FLASH] = "Flash";
     shell_command_map[HSHELL_RUDEAPPACTIVATED] = "RudeAppActivated";
+
+    return true;
 }
+
+void MainWindow::os_events_cleanup() {}
 
 void DBprintf(const char *fmt, ...)
 {
@@ -356,7 +360,7 @@ void MainWindow::make_active_window(WId win_id)
     ::SetActiveWindow(_win_id);
 }
 
-bool MainWindow::locate_instance()
+bool MainWindow::os_locate_instance()
 {
     TCHAR   buffer[MAX_PATH];
     WinList win_list;
@@ -377,7 +381,7 @@ bool MainWindow::locate_instance()
     return false;
 }
 
-void MainWindow::play_sound(int sound)
+void MainWindow::os_play_sound(int sound)
 {
     if(enable_sound_effects &&
        sound >= SOUND_DELETE &&
@@ -386,7 +390,7 @@ void MainWindow::play_sound(int sound)
         ::PlaySound((LPCWSTR)sound_cache[sound].constData(), NULL, SND_MEMORY | SND_ASYNC);
 }
 
-void MainWindow::set_startup()
+void MainWindow::os_set_startup()
 {
     HKEY hkey;
 
@@ -439,7 +443,7 @@ LPTSTR get_window_text(HWND win_id, int& text_length)
     return lptstr;
 }
 
-void MainWindow::set_hooks()
+void MainWindow::os_set_hooks()
 {
     QString msg("SHELLHOOK");
     WM_SHELLHOOKMESSAGE = RegisterWindowMessage(AS_LPCWSTR(msg));
