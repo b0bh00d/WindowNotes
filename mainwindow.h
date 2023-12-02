@@ -296,20 +296,21 @@ private:    // data members
     HHOOK               cbt_hook_handle{0};
     HWINEVENTHOOK       win_movesize_hook_handle{0};
     HWINEVENTHOOK       win_minimize_hook_handle{0};
-    HWND                focus_window_handle{0};
     RECT                focus_window_rect{0};
     unsigned int        WM_SHELLHOOKMESSAGE;
     CommandMap          shell_command_map;
 
     QChar               add_hook_key{DEFAULT_ADD_KEY};
+    void                win_get_active_rect();
 #endif
 #ifdef QT_LINUX
     WindowEventsPtr     m_window_events;
 
     bool                report_events{true};
     int                 focus_window_handle{0};
-    QRect               focus_window_rect;
 #endif
+
+    QRect               focus_window_rect;
 
     WindowData          window_data;
 

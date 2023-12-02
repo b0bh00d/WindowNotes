@@ -31,7 +31,7 @@ void MainWindow::lnx_regard_events()
 
 bool MainWindow::os_locate_instance()
 {
-    auto title_regex = QRegularExpression("^WindowNotes .+Bob Hood$");
+    static auto title_regex = QRegularExpression("^WindowNotes .+Bob Hood$");
 
     QProcess xwininfo;
     xwininfo.setProgram("xwininfo");
@@ -108,12 +108,12 @@ void MainWindow::slot_window_event(WindowEvents::Action action, WindowEvents::Wi
                 focus_window_title = win_data.title;
 
                 current_context = locate_context();
-                if(current_context)
-                {
-                    arrange_notetabs();
-                    display_notetabs();
-                }
+
+                arrange_notetabs();
+                display_notetabs();
+
                 break;
+
             case WindowEvents::Action::Title:
                 // the title of the active window has changed
                 break;
@@ -129,6 +129,7 @@ void MainWindow::slot_window_event(WindowEvents::Action action, WindowEvents::Wi
                     focus_window_title.clear();
                 }
                 break;
+
             case WindowEvents::Action::Moving:
             case WindowEvents::Action::Resizing:
                 break;
@@ -146,12 +147,12 @@ void MainWindow::slot_window_event(WindowEvents::Action action, WindowEvents::Wi
                 focus_window_rect = QRect(win_data.abs_left, win_data.abs_top, win_data.width, win_data.height);
 
                 current_context = locate_context();
-                if(current_context)
-                {
-                    arrange_notetabs();
-                    display_notetabs();
-                }
+
+                arrange_notetabs();
+                display_notetabs();
+
                 break;
+
             case WindowEvents::Action::None:
             default:
                 break;

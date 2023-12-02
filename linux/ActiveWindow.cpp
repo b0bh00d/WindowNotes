@@ -31,7 +31,7 @@ void ActiveWindow::slot_read_output()
         QString line_ = line.trimmed();
         if(line_.contains("_NET_ACTIVE_WINDOW"))
         {
-            auto r = QRegularExpression("window\\s+id\\s+\\#\\s+([\\wa-fx]+)$");
+            static auto r = QRegularExpression("window\\s+id\\s+\\#\\s+([\\wa-fx]+)$");
             auto match = r.match(line_);
             if(match.hasMatch())
             {

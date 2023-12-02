@@ -59,93 +59,93 @@ MainWindow::MainWindow(QWidget *parent)
 
 #ifdef QT_WIN
     connected = connect(ui->edit_Add_Key, &QLineEdit::textChanged, this, &MainWindow::slot_validate_add_key);
-    ASSERT_UNUSED(connected);
+    assert(connected);
 #endif
 #ifdef QT_LINUX
     ui->edit_Add_Key->setEnabled(false);
 #endif
 
     connected = connect(ui->check_Start_Automatically, &QCheckBox::stateChanged, this, &MainWindow::slot_toggle_startup);
-    ASSERT_UNUSED(connected);
+    assert(connected);
 
     connected = connect(ui->spin_Selected_Opacity, static_cast<void (QSpinBox::*)(int)>(&QSpinBox::valueChanged),
                         this, &MainWindow::slot_selected_opacity_changed);
-    ASSERT_UNUSED(connected);
+    assert(connected);
 
     connected = connect(ui->spin_Unselected_Opacity, static_cast<void (QSpinBox::*)(int)>(&QSpinBox::valueChanged),
                         this, &MainWindow::slot_unselected_opacity_changed);
-    ASSERT_UNUSED(connected);
+    assert(connected);
 
     ui->radio_Position_Left->setChecked(true);
 
     connected = connect(ui->radio_Position_Left, &QRadioButton::toggled, this, &MainWindow::slot_select_position_left);
-    ASSERT_UNUSED(connected);
+    assert(connected);
 
     connected = connect(ui->radio_Position_Top, &QRadioButton::toggled, this, &MainWindow::slot_select_position_top);
-    ASSERT_UNUSED(connected);
+    assert(connected);
 
     connected = connect(ui->radio_Position_Right, &QRadioButton::toggled, this, &MainWindow::slot_select_position_right);
-    ASSERT_UNUSED(connected);
+    assert(connected);
 
     connected = connect(ui->radio_Position_Bottom, &QRadioButton::toggled, this, &MainWindow::slot_select_position_bottom);
-    ASSERT_UNUSED(connected);
+    assert(connected);
 
     ui->check_Enable_Sound_Effects->setChecked(enable_sound_effects);
     connected = connect(ui->check_Enable_Sound_Effects, &QCheckBox::toggled, this, &MainWindow::slot_enable_sound_effects);
-    ASSERT_UNUSED(connected);
+    assert(connected);
 
     ui->edit_Delete_Note_Sound->set_clear_button(ui->button_Clear_Delete_Sound);
     ui->edit_Delete_Note_Sound->setEnabled(enable_sound_effects);
     ui->edit_Delete_Note_Sound->setText(sound_files[SOUND_DELETE]);
 
     connected = connect(ui->edit_Delete_Note_Sound, &QLineEdit::editingFinished, this, &MainWindow::slot_delete_sound_file_changed);
-    ASSERT_UNUSED(connected);
+    assert(connected);
     connected = connect(ui->button_Clear_Delete_Sound, &QPushButton::clicked, this, &MainWindow::slot_clear_delete_sound);
-    ASSERT_UNUSED(connected);
+    assert(connected);
     connected = connect(ui->button_Browse_For_Delete_Sound, &QPushButton::clicked, this, &MainWindow::slot_browse_for_delete_sound);
-    ASSERT_UNUSED(connected);
+    assert(connected);
 
     ui->edit_Copy_Note_Sound->set_clear_button(ui->button_Clear_Copy_Sound);
     ui->edit_Copy_Note_Sound->setEnabled(enable_sound_effects);
     ui->edit_Copy_Note_Sound->setText(sound_files[SOUND_COPY]);
 
     connected = connect(ui->edit_Copy_Note_Sound, &QLineEdit::editingFinished, this, &MainWindow::slot_copy_sound_file_changed);
-    ASSERT_UNUSED(connected);
+    assert(connected);
     connected = connect(ui->button_Clear_Copy_Sound, &QPushButton::clicked, this, &MainWindow::slot_clear_copy_sound);
-    ASSERT_UNUSED(connected);
+    assert(connected);
     connected = connect(ui->button_Browse_For_Copy_Sound, &QPushButton::clicked, this, &MainWindow::slot_browse_for_copy_sound);
-    ASSERT_UNUSED(connected);
+    assert(connected);
 
     ui->edit_Open_Edit_Sound->set_clear_button(ui->button_Clear_Open_Sound);
     ui->edit_Open_Edit_Sound->setEnabled(enable_sound_effects);
     ui->edit_Open_Edit_Sound->setText(sound_files[SOUND_NOTEOPEN]);
 
     connected = connect(ui->edit_Open_Edit_Sound, &QLineEdit::editingFinished, this, &MainWindow::slot_open_sound_file_changed);
-    ASSERT_UNUSED(connected);
+    assert(connected);
     connected = connect(ui->button_Clear_Open_Sound, &QPushButton::clicked, this, &MainWindow::slot_clear_open_sound);
-    ASSERT_UNUSED(connected);
+    assert(connected);
     connected = connect(ui->button_Browse_For_Open_Sound, &QPushButton::clicked, this, &MainWindow::slot_browse_for_open_sound);
-    ASSERT_UNUSED(connected);
+    assert(connected);
 
     ui->edit_Close_Edit_Sound->set_clear_button(ui->button_Clear_Close_Sound);
     ui->edit_Close_Edit_Sound->setEnabled(enable_sound_effects);
     ui->edit_Close_Edit_Sound->setText(sound_files[SOUND_NOTECLOSE]);
 
     connected = connect(ui->edit_Close_Edit_Sound, &QLineEdit::editingFinished, this, &MainWindow::slot_close_sound_file_changed);
-    ASSERT_UNUSED(connected);
+    assert(connected);
     connected = connect(ui->button_Clear_Close_Sound, &QPushButton::clicked, this, &MainWindow::slot_clear_close_sound);
-    ASSERT_UNUSED(connected);
+    assert(connected);
     connected = connect(ui->button_Browse_For_Close_Sound, &QPushButton::clicked, this, &MainWindow::slot_browse_for_close_sound);
-    ASSERT_UNUSED(connected);
+    assert(connected);
 
     set_sound_states();
 
     ui->check_ClipboardTTL->setChecked(clipboard_ttl);
 
     connected = connect(ui->check_ClipboardTTL, &QPushButton::clicked, this, &MainWindow::slot_toggle_clipboard_ttl);
-    ASSERT_UNUSED(connected);
+    assert(connected);
     connected = connect(ui->edit_ClipboardTTL, &QLineEdit::textEdited, this, &MainWindow::slot_clipboard_ttl_timeout_changed);
-    ASSERT_UNUSED(connected);
+    assert(connected);
 
     if(clipboard_ttl_timeout > 0)
         ui->edit_ClipboardTTL->setText(QString::number(clipboard_ttl_timeout));
@@ -154,40 +154,40 @@ MainWindow::MainWindow(QWidget *parent)
     ui->edit_ClipboardTTL->setEnabled(clipboard_ttl);
 
     connected = connect(ui->button_Export, &QPushButton::clicked, this, &MainWindow::slot_export_notes);
-    ASSERT_UNUSED(connected);
+    assert(connected);
     connected = connect(ui->button_Import, &QPushButton::clicked, this, &MainWindow::slot_import_notes);
-    ASSERT_UNUSED(connected);
+    assert(connected);
 
     ui->tree_Database->setContextMenuPolicy(Qt::CustomContextMenu);
     connected = connect(ui->tree_Database, &QTreeWidget::customContextMenuRequested, this, &MainWindow::slot_show_database_context_menu);
-    ASSERT_UNUSED(connected);
+    assert(connected);
     connected = connect(ui->tree_Database, &QTreeWidget::itemDoubleClicked, this, &MainWindow::slot_edit_assign);
-    ASSERT_UNUSED(connected);
+    assert(connected);
 
     // About
 
     connected = connect(ui->text_License, &QTextBrowser::anchorClicked, this, &MainWindow::slot_process_link);
-    ASSERT_UNUSED(connected);
+    assert(connected);
 
     connected = connect(ui->label_DenverZoo, &QLabel::linkActivated, this, &MainWindow::slot_process_label_link);
-    ASSERT_UNUSED(connected);
+    assert(connected);
 
     connected = connect(ui->label_CatCareSociety, &QLabel::linkActivated, this, &MainWindow::slot_process_label_link);
-    ASSERT_UNUSED(connected);
+    assert(connected);
 
     connected = connect(ui->label_MaxFund, &QLabel::linkActivated, this, &MainWindow::slot_process_label_link);
-    ASSERT_UNUSED(connected);
+    assert(connected);
 
     connected = connect(ui->label_RMFR, &QLabel::linkActivated, this, &MainWindow::slot_process_label_link);
-    ASSERT_UNUSED(connected);
+    assert(connected);
 
     // Tray
 
     trayIcon = new QSystemTrayIcon(this);
     connected = connect(trayIcon, &QSystemTrayIcon::messageClicked, this, &MainWindow::slot_message_clicked);
-    ASSERT_UNUSED(connected);
+    assert(connected);
     connected = connect(trayIcon, &QSystemTrayIcon::activated, this, &MainWindow::slot_icon_activated);
-    ASSERT_UNUSED(connected);
+    assert(connected);
 
     trayIcon->setIcon(QIcon(":/images/Pencil.png"));
     trayIcon->setToolTip(tr("WindowNotes"));
@@ -196,6 +196,7 @@ MainWindow::MainWindow(QWidget *parent)
 
     clipboard_timer = new QTimer(this);
     connected = connect(clipboard_timer, &QTimer::timeout, this, &MainWindow::slot_clipboard_ttl);
+    assert(connected);
     clipboard_timer->start(1000);
 
     trayIcon->show();
@@ -383,23 +384,23 @@ void MainWindow::slot_tab_RMB(NoteTab* id, QMouseEvent* event)
 
     QAction* action = menu.addAction(QIcon(":/images/Edit.png"), tr("Edit Note"));
     bool connected = connect(action, &QAction::triggered, this, &MainWindow::slot_pu_edit_note);
-    ASSERT_UNUSED(connected);
+    assert(connected);
 
     menu.addSeparator();
 
     action = menu.addAction(QIcon(":/images/Restore.png"), tr("Copy Note"));
     connected = connect(action, &QAction::triggered, this, &MainWindow::slot_pu_copy_note);
-    ASSERT_UNUSED(connected);
+    assert(connected);
 
     menu.addSeparator();
 
     action = menu.addAction(QIcon(":/images/Remove.png"), tr("Delete Note"));
     connected = connect(action, &QAction::triggered, this, &MainWindow::slot_pu_delete_note);
-    ASSERT_UNUSED(connected);
+    assert(connected);
 
     action = menu.addAction(QIcon(":/images/Bomb.png"), tr("Clear All Notes"));
     connected = connect(action, &QAction::triggered, this, &MainWindow::slot_pu_clear_notes);
-    ASSERT_UNUSED(connected);
+    assert(connected);
 
     id->set_selected();
 
@@ -413,6 +414,7 @@ void MainWindow::slot_tab_RMB(NoteTab* id, QMouseEvent* event)
     {
         case NOTEACTION_DELETE:
             connected = connect(current_tab, &NoteTab::signal_tab_faded, this, &MainWindow::slot_single_tab_faded);
+            assert(connected);
             tab_animating = true;
             current_tab->fade();
 
@@ -449,7 +451,7 @@ void MainWindow::slot_tab_RMB(NoteTab* id, QMouseEvent* event)
             {
                 NoteTab* nt = *tabs_iter;
                 connected = connect(nt, &NoteTab::signal_tab_faded, this, &MainWindow::slot_multiple_tab_faded);
-                ASSERT_UNUSED(connected);
+                assert(connected);
                 nt->fade();
             }
 
@@ -573,7 +575,7 @@ void MainWindow::slot_edit_note()
     note_edit_window->set_note_data(note_data);
 
     bool connected = connect(note_edit_window, &NoteEdit::signal_lost_focus, this, &MainWindow::slot_close_edit_window);
-    ASSERT_UNUSED(connected);
+    assert(connected);
 
     os_play_sound(SOUND_NOTEOPEN);
     note_edit_window->show();
@@ -763,11 +765,17 @@ NoteTab* MainWindow::add_notetab(int icon)
     NoteTab* nt = new NoteTab(icon, this);
     nt->set_opacities(selected_opacity, unselected_opacity);
     bool connected = connect(nt, &NoteTab::signal_tab_entered, this, &MainWindow::slot_tab_entered);
+    assert(connected);
     connected = connect(nt, &NoteTab::signal_tab_exited, this, &MainWindow::slot_tab_exited);
+    assert(connected);
     connected = connect(nt, &NoteTab::signal_tab_LMB_down, this, &MainWindow::slot_tab_LMB_down);
+    assert(connected);
     connected = connect(nt, &NoteTab::signal_tab_LMB_move, this, &MainWindow::slot_tab_LMB_move);
+    assert(connected);
     connected = connect(nt, &NoteTab::signal_tab_LMB_up, this, &MainWindow::slot_tab_LMB_up);
+    assert(connected);
     connected = connect(nt, &NoteTab::signal_tab_RMB, this, &MainWindow::slot_tab_RMB);
+    assert(connected);
     return nt;
 }
 
@@ -776,15 +784,23 @@ NoteTab* MainWindow::append_addtab()
     NoteTab* nt = new NoteTab(9999, this);
     nt->set_opacities(selected_opacity, unselected_opacity);
     bool connected = connect(nt, &NoteTab::signal_tab_LMB_up, this, &MainWindow::slot_process_add);
+    assert(connected);
     return nt;
 }
+
+#ifdef QT_WIN
+void MainWindow::get_active_rect()
+{
+    RECT rect{0};
+    GetWindowRect(focus_window_handle, (LPRECT)&rect);
+    focus_window_rect = QRect(rect.left, rect.top, rect.right - rect.left, rect.bottom - rect.top);
+}
+#endif
 
 int MainWindow::arrange_notetabs(bool hide_and_show)
 {
     if(tab_animating
-#ifdef QT_WIN
         || !focus_window_handle
-#endif
         || !current_context || isVisible())
         return 0;
 
@@ -793,19 +809,13 @@ int MainWindow::arrange_notetabs(bool hide_and_show)
     QDesktopWidget desk;
     QRect r = desk.screenGeometry();
 #ifdef QT_WIN
-    GetWindowRect(focus_window_handle, (LPRECT)&focus_window_rect);
-
-    auto win_left = focus_window_rect.left;
-    auto win_bottom = focus_window_rect.bottom;
-    auto win_right = focus_window_rect.right;
-    auto win_top = focus_window_rect.top;
+    win_get_active_rect();
 #endif
-#ifdef QT_LINUX
+
     auto win_left = focus_window_rect.left();
     auto win_bottom = focus_window_rect.bottom();
     auto win_right = focus_window_rect.right();
     auto win_top = focus_window_rect.top();
-#endif
 
     if((win_left - NOTE_OFFSET - NOTE_DOCK_SIZE) > 0)
         sides.setBit(SIDE_LEFT, true);
@@ -819,14 +829,8 @@ int MainWindow::arrange_notetabs(bool hide_and_show)
     if(!sides.count(true))
         return 0;
 
-#ifdef QT_WIN
-    int left_count = (focus_window_rect.bottom - focus_window_rect.top) / (NOTE_DOCK_SIZE + 5);
-    int bottom_count = (focus_window_rect.right - focus_window_rect.left) / (NOTE_DOCK_SIZE + 5);
-#endif
-#ifdef QT_LINUX
     int left_count = (focus_window_rect.bottom() - focus_window_rect.top()) / (NOTE_DOCK_SIZE + 5);
     int bottom_count = (focus_window_rect.right() - focus_window_rect.left()) / (NOTE_DOCK_SIZE + 5);
-#endif
 
     int rotation[] = { SIDE_LEFT, SIDE_BOTTOM, SIDE_RIGHT, SIDE_TOP };
     int direction[] = { 1, 1, -1, -1 };
@@ -851,7 +855,7 @@ int MainWindow::arrange_notetabs(bool hide_and_show)
     delete_notetabs();
 
     int max_notes = current_context->note_count() /* include the add tab */ + 1;
-    int add_tab = max_notes;
+    int add_tab = max_notes - 1;
     int note_index = 0;
 
     for(int i = 0; i < 4;i++)
@@ -1087,7 +1091,7 @@ void MainWindow::slot_process_add()
         delete note_edit_window;
 
 #ifdef QT_WIN
-    GetWindowRect(focus_window_handle, (LPRECT)&focus_window_rect);
+    win_get_active_rect();
 #endif
 
     note_edit_window = new NoteEdit();
@@ -1111,19 +1115,13 @@ void MainWindow::slot_process_add()
 
     const QRect& r = note_edit_window->geometry();
 
-#ifdef QT_WIN
-    auto win_left = focus_window_rect.left;
-    auto win_top = focus_window_rect.top;
-#endif
-#ifdef QT_LINUX
     auto win_left = focus_window_rect.left();
     auto win_top = focus_window_rect.top();
-#endif
 
     note_edit_window->setGeometry(win_left + 10, win_top + 20, r.width(), r.height());
     note_edit_window->setFixedSize(r.width(), r.height());
     bool connected = connect(note_edit_window, &NoteEdit::signal_lost_focus, this, &MainWindow::slot_close_add_window);
-    ASSERT_UNUSED(connected);
+    assert(connected);
 
     os_play_sound(SOUND_NOTEOPEN);
     note_edit_window->show();
@@ -1202,7 +1200,7 @@ void MainWindow::slot_restore()
 
     populate_note_tree();
     bool connected = connect(ui->tree_Database, &QTreeWidget::itemChanged, this, &MainWindow::slot_edit_finished);
-    ASSERT_UNUSED(connected);
+    assert(connected);
 
     restore_window_data(this);
     showNormal();
@@ -1955,7 +1953,7 @@ void MainWindow::populate_note_tree()
                 combo->setCurrentIndex(id_is_expression ? COMBO_YES : COMBO_NO);
                 bool connected = connect(combo, static_cast<void (QComboBox::*)(int)>(&QComboBox::currentIndexChanged),
                                          this, &MainWindow::slot_combo_changed);
-                ASSERT_UNUSED(connected);
+                assert(connected);
 
                 ui->tree_Database->setItemWidget(item, 1, combo);
                 context_map[combo] = item;
@@ -2007,16 +2005,18 @@ void MainWindow::slot_show_database_context_menu(const QPoint &pos)
     {
         action = menu.addAction(QIcon(":/images/Remove.png"), tr("Remove Context"));
         connected = connect(action, &QAction::triggered, this, &MainWindow::slot_database_delete_context);
+        assert(connected);
     }
     else
     {
         action = menu.addAction(QIcon(":/images/Remove.png"), tr("Remove Note"));
         connected = connect(action, &QAction::triggered, this, &MainWindow::slot_database_delete_note);
+        assert(connected);
 
         action = menu.addAction(QIcon(":/images/Edit.png"), tr("Copy to Clipboard"));
         connected = connect(action, &QAction::triggered, this, &MainWindow::slot_database_copy_note);
+        assert(connected);
     }
-    ASSERT_UNUSED(connected);
 
     menu.exec(ui->tree_Database->viewport()->mapToGlobal(pos));
 }

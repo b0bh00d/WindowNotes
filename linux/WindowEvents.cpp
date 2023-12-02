@@ -77,49 +77,49 @@ void WindowEvents::slot_process()
                 if(line_.contains("xwininfo: Window id:"))
                 {
                     // grab the window title
-                    auto r = QRegularExpression("\"(.+)\"$");
+                    static auto r = QRegularExpression("\"(.+)\"$");
                     auto match = r.match(line_);
                     if(match.hasMatch())
                         win_data.title = match.captured(1);
                 }
                 else if(line_.contains("Absolute upper-left X"))
                 {
-                    auto r = QRegularExpression(":\\s+(\\w+)$");
+                    static auto r = QRegularExpression(":\\s+(\\w+)$");
                     auto match = r.match(line_);
                     if(match.hasMatch())
                         win_data.abs_left = match.captured(1).toInt();
                 }
                 else if(line_.contains("Absolute upper-left Y"))
                 {
-                    auto r = QRegularExpression(":\\s+(\\w+)$");
+                    static auto r = QRegularExpression(":\\s+(\\w+)$");
                     auto match = r.match(line_);
                     if(match.hasMatch())
                         win_data.abs_top = match.captured(1).toInt();
                 }
                 else if(line_.contains("Relative upper-left X"))
                 {
-                    auto r = QRegularExpression(":\\s+(\\w+)$");
+                    static auto r = QRegularExpression(":\\s+(\\w+)$");
                     auto match = r.match(line_);
                     if(match.hasMatch())
                         win_data.rel_left = match.captured(1).toInt();
                 }
                 else if(line_.contains("Relative upper-left Y"))
                 {
-                    auto r = QRegularExpression(":\\s+(\\w+)$");
+                    static auto r = QRegularExpression(":\\s+(\\w+)$");
                     auto match = r.match(line_);
                     if(match.hasMatch())
                         win_data.rel_top = match.captured(1).toInt();
                 }
                 else if(line_.contains("Width: "))
                 {
-                    auto r = QRegularExpression(":\\s+(\\w+)$");
+                    static auto r = QRegularExpression(":\\s+(\\w+)$");
                     auto match = r.match(line_);
                     if(match.hasMatch())
                         win_data.width = match.captured(1).toInt();
                 }
                 else if(line_.contains("Height: "))
                 {
-                    auto r = QRegularExpression(":\\s+(\\w+)$");
+                    static auto r = QRegularExpression(":\\s+(\\w+)$");
                     auto match = r.match(line_);
                     if(match.hasMatch())
                         win_data.height = match.captured(1).toInt();
