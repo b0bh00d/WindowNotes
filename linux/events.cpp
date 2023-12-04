@@ -1,3 +1,10 @@
+// https://github.com/ickyicky/window-calls
+// https://www.codeproject.com/Articles/5271677/How-to-Create-A-GNOME-Extension
+// https://www.reddit.com/r/linuxquestions/comments/8dhxnq/sample_code_for_the_c_gnome_dbus_bindings/
+// https://github.com/makercrew/dbus-sample#operator-well-could-you-help-me-place-this-call
+// https://docs.gtk.org/gio/
+// https://github.com/julio641742/gnome-shell-extension-reference/blob/master/REFERENCE.md
+
 #include <QtCore/QRegularExpression>
 #include <QtCore/QRegularExpressionMatch>
 #include <QtCore/QBuffer>
@@ -15,8 +22,7 @@ bool MainWindow::os_events_init()
 
 void MainWindow::os_events_cleanup()
 {
-    if(m_window_events->isRunning())
-        m_window_events->stop();
+    m_window_events->stop();
 }
 
 void MainWindow::lnx_ignore_events()
@@ -95,7 +101,9 @@ void MainWindow::slot_window_event(WindowEvents::Action action, WindowEvents::Wi
 {
     if(report_events)
     {
-        auto id = win_data.window_id.toInt();
+        bool ok{false};
+        auto id = win_data.window_id.toUInt(&ok, 16);
+        if(!ok) id = 0;
 
         switch(action)
         {
@@ -103,7 +111,7 @@ void MainWindow::slot_window_event(WindowEvents::Action action, WindowEvents::Wi
                 focus_window_handle == id ? hide_notetabs() : delete_notetabs();
 
                 // the active window has changed (and so has the title)
-                focus_window_handle = win_data.window_id.toInt();
+                focus_window_handle = id;
                 focus_window_rect = QRect(win_data.abs_left, win_data.abs_top, win_data.width, win_data.height);
                 focus_window_title = win_data.title;
 

@@ -47,11 +47,19 @@ bool NoteEdit::eventFilter(QObject* object, QEvent* event)
 
 void NoteEdit::showEvent(QShowEvent* /*event*/)
 {
+#ifdef QT_LINUX
+    QFont font = QFont("Loma", 12);
+    ui->label_Edit->setFont(font);
+    ui->label_Add->setFont(font);
+#endif
+
     QTextCursor cursor = ui->edit_Note_Content->textCursor();
     cursor.setPosition(ui->edit_Note_Content->toPlainText().length());
     ui->edit_Note_Content->setTextCursor(cursor);
 
-    ui->edit_Note_Content->setFocus();
+    QTimer::singleShot(0, [this]() {
+        ui->edit_Note_Content->setFocus();
+    });
 }
 
 void NoteEdit::slot_lost_focus()

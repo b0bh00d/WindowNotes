@@ -13,6 +13,7 @@
 #include <QtCore/QProcess>
 #include <QtCore/QRandomGenerator>
 #include <QtCore/QStandardPaths>
+#include <QtCore/QTimer>
 
 #include "mainwindow.h"
 #include "ui_mainwindow.h"
@@ -425,7 +426,7 @@ void MainWindow::slot_tab_RMB(NoteTab* id, QMouseEvent* event)
         case NOTEACTION_EDIT:
             // leave 'in_context_menu' set to protect 'current_tab' until
             // editing is complete
-            QTimer::singleShot(200, this, SLOT(slot_edit_note()));
+            QTimer::singleShot(200, this, &MainWindow::slot_edit_note);
             break;
 
         case NOTEACTION_COPY:
@@ -644,7 +645,7 @@ void MainWindow::hide_notetabs()
 
 void MainWindow::delete_notetabs()
 {
-    if(tab_animating || !current_context || isVisible())
+    if(tab_animating || !tabs_list->size() || isVisible())
         return;
 
     if(tabs_list->size())
@@ -677,8 +678,8 @@ void MainWindow::slot_export_notes()
     ExportDialog::FileFormat format = export_dialog.get_file_format();
 
     QString file_name = QString("%1\\WindowNotes.%2")
-                .arg(folder)
-                .arg((format == ExportDialog::FORMAT_XML) ? "xml" : ((format == ExportDialog::FORMAT_CSV) ? "csv" : "txt"));
+                .arg(folder,
+                (format == ExportDialog::FORMAT_XML) ? "xml" : ((format == ExportDialog::FORMAT_CSV) ? "csv" : "txt"));
 
     QFile output_stream(file_name);
     if(!output_stream.open(QIODevice::WriteOnly | QIODevice::Text | QIODevice::Truncate))
@@ -749,7 +750,7 @@ void MainWindow::slot_import_notes()
 
 void MainWindow::display_notetabs()
 {
-    if(tab_animating || !current_context || !tabs_list->size() || isVisible())
+    if(tab_animating || !tabs_list->size() || isVisible())
         return;
 
     TabsListIter iter;
@@ -801,7 +802,7 @@ int MainWindow::arrange_notetabs(bool hide_and_show)
 {
     if(tab_animating
         || !focus_window_handle
-        || !current_context || isVisible())
+        || isVisible())
         return 0;
 
     QBitArray sides(4);
@@ -854,7 +855,11 @@ int MainWindow::arrange_notetabs(bool hide_and_show)
 
     delete_notetabs();
 
-    int max_notes = current_context->note_count() /* include the add tab */ + 1;
+    int max_notes = 0;
+    if(current_context)
+        max_notes = current_context->note_count();
+    ++max_notes;        // always show the add tab
+
     int add_tab = max_notes - 1;
     int note_index = 0;
 
@@ -1131,6 +1136,7 @@ void MainWindow::slot_process_add()
 #ifdef QT_LINUX
     note_edit_window->raise();
     note_edit_window->setFocus();
+    note_edit_window->activateWindow();
 #endif
 }
 
@@ -1166,6 +1172,7 @@ void MainWindow::slot_close_add_window()
                 next_tab_icon = 1;
         }
 
+        assert(current_context);
         current_context->add_note(note_data);
 
         save_note_database();
@@ -1278,6 +1285,7 @@ void MainWindow::slot_menu_action(QAction* action)
                 next_tab_icon = 1;
         }
 
+        assert(current_context);
         current_context->add_note(*note_clipboard);
 
         save_note_database();

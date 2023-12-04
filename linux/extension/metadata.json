@@ -1,0 +1,13 @@
+{
+  "name": "WindowNotesEx",
+  "description": "Queries gnome-shell for salient info from the currently active window (if there is one)",
+  "uuid": "windownotesex@b0bh00d.xyz",
+  "shell-version": [
+    "41",
+    "42",
+    "43",
+    "44"
+  ],
+  "version": 1.0,
+  "url": "https://github.com/ickyicky/window-calls"
+}

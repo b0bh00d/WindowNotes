@@ -307,16 +307,15 @@ private:    // data members
     WindowEventsPtr     m_window_events;
 
     bool                report_events{true};
-    int                 focus_window_handle{0};
+    uint                focus_window_handle{0};
 #endif
 
     QRect               focus_window_rect;
+    QString             focus_window_title;
 
     WindowData          window_data;
 
     bool                window_geometry_save_enabled{true};
-
-    QString             focus_window_title;
 
     TabsList*           tabs_list{nullptr};
     NoteTab*            current_tab{nullptr};
@@ -329,7 +328,7 @@ private:    // data members
     bool                notetab_clicked{false};
     bool                enable_sound_effects{true};
 
-    double              selected_opacity{1.0}, unselected_opacity{0.3};
+    double              selected_opacity{1.0}, unselected_opacity{0.6};
 
     NoteEdit*           note_edit_window{nullptr};
 

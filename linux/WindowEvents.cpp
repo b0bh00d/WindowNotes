@@ -18,22 +18,15 @@ QMap<WindowEvents::Action, QString> state_name
 };
 
 WindowEvents::WindowEvents(QObject *parent)
-    : QThread(parent)
+    : QObject(parent)
 {
     qRegisterMetaType<WindowEvents::Action>("Action");
     qRegisterMetaType<WindowEvents::WindowData>("WindowData");
-
-    m_queue = StrQueuePtr(new Queue<QString>);
-
-    m_active_window = ActiveWindowPtr(new ActiveWindow(m_queue));
-
-    connect(m_active_window.data(), &ActiveWindow::signal_active_window, this, &WindowEvents::slot_active_window);
-    connect(m_active_window.data(), &ActiveWindow::signal_error, this, &WindowEvents::slot_thread_error);
 }
 
 void WindowEvents::slot_active_window(QString win_id)
 {
-    m_queue->enqueue(win_id);
+    m_queue.enqueue(win_id);
 }
 
 void WindowEvents::slot_thread_error(QByteArray output)
@@ -45,8 +38,8 @@ void WindowEvents::slot_process()
 {
     QString new_id;
 
-    if(!m_queue->empty())
-        new_id = m_queue->dequeue();
+    if(!m_queue.isEmpty())
+        new_id = m_queue.dequeue();
 
     auto win_id = m_last_win_data.window_id;
     if(!new_id.isEmpty() && new_id.compare(m_last_win_data.window_id))
@@ -169,20 +162,21 @@ void WindowEvents::slot_process()
     }
 }
 
-void WindowEvents::run()
+void WindowEvents::start()
 {
+    m_active_window = ActiveWindowPtr(new ActiveWindow());
+    connect(m_active_window.data(), &ActiveWindow::signal_active_window, this, &WindowEvents::slot_active_window);
+    connect(m_active_window.data(), &ActiveWindow::signal_error, this, &WindowEvents::slot_thread_error);
+
     m_active_window->start();
 
-    // m_timer.moveToThread(this);
-    // m_timer.setInterval(300);
-    // connect(&m_timer, &QTimer::timeout, this, &WindowEvents::slot_process);
-    // m_timer.start();
+    m_timer.setInterval(300);
+    connect(&m_timer, &QTimer::timeout, this, &WindowEvents::slot_process);
+    m_timer.start();
+}
 
-    while(m_do_run)
-    {
-        QThread::msleep(300);
-        slot_process();
-    }
-
+void WindowEvents::stop()
+{
+    m_timer.stop();
     m_active_window->stop();
 }

@@ -8,9 +8,8 @@
 //----------------------------------------------------------------------------
 // xprop monitor thread
 
-ActiveWindow::ActiveWindow(StrQueuePtr q, QObject* parent)
-    : QThread(parent),
-      m_queue(q)
+ActiveWindow::ActiveWindow(QObject* parent)
+    : QObject(parent)
 {}
 
 void ActiveWindow::slot_read_error()
@@ -41,7 +40,7 @@ void ActiveWindow::slot_read_output()
     }
 }
 
-void ActiveWindow::run()
+void ActiveWindow::start()
 {
     m_xprop_spy = ProcessPtr(new QProcess());
     m_xprop_spy->setProgram("xprop");
@@ -52,12 +51,11 @@ void ActiveWindow::run()
 
     m_xprop_spy->start();
     m_xprop_spy->waitForStarted();
+}
 
+void ActiveWindow::stop()
+{
+    m_xprop_spy->terminate();
     while(m_xprop_spy->state() == QProcess::Running)
         m_xprop_spy->waitForFinished(100);
-
-    if(!m_do_run)
-        m_xprop_spy->terminate();
-
-    m_xprop_spy->waitForFinished();
 }

@@ -1,16 +1,16 @@
 #pragma once
 
 #include <QtCore/QMap>
+#include <QtCore/QQueue>
 #include <QtCore/QString>
 #include <QtCore/QThread>
 #include <QtCore/QTimer>
 #include <QtCore/QProcess>
 #include <QtCore/QSharedPointer>
 
-#include "Queue.h"
 #include "ActiveWindow.h"
 
-class WindowEvents : public QThread
+class WindowEvents : public QObject
 {
     Q_OBJECT
 
@@ -43,14 +43,12 @@ public:
 
     explicit WindowEvents(QObject *parent = nullptr);
 
-    void    stop() { m_do_run = false; }
+    void    start();
+    void    stop();
 
 signals:
     void    signal_window_event(Action, WindowData);
     void    signal_thread_error(QByteArray);
-
-protected:
-    void    run() override;
 
 private slots:
     void    slot_active_window(QString);
@@ -58,11 +56,9 @@ private slots:
     void    slot_process();
 
 private:
-    bool    m_do_run{true};
-
     ActiveWindowPtr m_active_window;
 
-    StrQueuePtr m_queue;
+    QQueue<QString> m_queue;
 
     QTimer      m_timer;
 
