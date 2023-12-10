@@ -40,6 +40,8 @@ public:
     QDomElement     get_note_node()                     const { return my_note; }
     int             get_note_icon()                     const { return my_icon; }
 
+    void            set_tool_tip(const QString& tip)          { my_tool_tip = tip; }
+
 signals:
     void    signal_tab_entered(NoteTab* id);
     void    signal_tab_exited(NoteTab* id);
@@ -75,6 +77,7 @@ private:    // data members
     QPoint  enter_point;
     int     my_icon;
     QDomElement my_note;
+    QString my_tool_tip;    // this will get set on Notes that are specialized (i.e., my_note == invalid)
 
     Qt::MouseButton event_button{Qt::NoButton};
 };

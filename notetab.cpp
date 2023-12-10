@@ -9,6 +9,10 @@
 
 #include "notetab.h"
 
+#ifdef QT_LINUX
+#include "linux/WindowEventsSingleton.h"
+#endif
+
 NoteTab::NoteTab(int icon, QWidget* parent, Qt::WindowFlags f)
     : my_icon(icon),
       QWidget(parent, f)
@@ -20,7 +24,10 @@ NoteTab::NoteTab(int icon, QWidget* parent, Qt::WindowFlags f)
     setMask(tab_bitmap.mask());
 
     QPalette* palette = new QPalette();
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
     palette->setBrush(QPalette::Background, QBrush(tab_bitmap));
+#pragma GCC diagnostic pop
     setPalette(*palette);
 }
 
@@ -88,38 +95,50 @@ void NoteTab::paintEvent(QPaintEvent* /*paintEvent*/)
 
 void NoteTab::enterEvent(QEvent* /*event*/)
 {
-    if(selected)
-        return;
-    enter_point = QCursor::pos();
+#ifdef QT_LINUX
+    WindowEventsSingleton::instance()->winEvents()->stop();
+#endif
 
-    if(!my_note.isNull())
+    if(!selected)
     {
-        bool use_mask = false;
-        if(my_note.hasAttribute("use_mask"))
-            use_mask = (my_note.attribute("use_mask").toInt() == 1);
+        enter_point = QCursor::pos();
 
-        if(use_mask && my_note.hasAttribute("mask"))
-            QToolTip::showText(enter_point, my_note.attribute("mask"), nullptr, QRect(), 600000);
-        else
-            QToolTip::showText(enter_point, my_note.firstChild().nodeValue(), nullptr, QRect(), 600000);
+        if(!my_note.isNull())
+        {
+            bool use_mask = false;
+            if(my_note.hasAttribute("use_mask"))
+                use_mask = (my_note.attribute("use_mask").toInt() == 1);
+
+            if(use_mask && my_note.hasAttribute("mask"))
+                QToolTip::showText(enter_point, my_note.attribute("mask"), nullptr, QRect(), 600000);
+            else
+                QToolTip::showText(enter_point, my_note.firstChild().nodeValue(), nullptr, QRect(), 600000);
+        }
+        else if(!my_tool_tip.isEmpty())
+            QToolTip::showText(enter_point, my_tool_tip, nullptr, QRect(), 600000);
+
+        entered = true;
+        opacity = 1.0;
+        emit signal_tab_entered(this);
+        update();
     }
-
-    entered = true;
-    opacity = 1.0;
-    emit signal_tab_entered(this);
-    update();
 }
 
 void NoteTab::leaveEvent(QEvent* /*event*/)
 {
-    if(selected)
-        return;
-    if(!my_note.isNull())
-        QToolTip::hideText();
-    entered = false;
-    opacity = unselected_opacity;
-    emit signal_tab_exited(this);
-    update();
+    if(!selected)
+    {
+        if(!my_note.isNull() || !my_tool_tip.isEmpty())
+            QToolTip::hideText();
+        entered = false;
+        opacity = unselected_opacity;
+        emit signal_tab_exited(this);
+        update();
+    }
+
+#ifdef QT_LINUX
+    WindowEventsSingleton::instance()->winEvents()->start();
+#endif
 }
 
 void NoteTab::mousePressEvent(QMouseEvent* event)

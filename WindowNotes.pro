@@ -1,4 +1,4 @@
-QT += widgets xml multimedia
+QT += widgets xml multimedia dbus
 TARGET = WindowNotes
 TEMPLATE = app
 

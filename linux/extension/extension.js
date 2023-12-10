@@ -29,10 +29,14 @@ class WindowNotesEx {
 
     const activeWin = global.get_window_actors().find(w => w.meta_window[`has_focus`]?.() === true);
     if (activeWin) {
-      const propMetaKeys = ['id', 'title'];
-      propMetaKeys.forEach(key => properties[key] = activeWin.meta_window[`get_${key}`]?.());
-      const propKeys = ['width', 'height', 'x', 'y'];
+      const propGetKeys = ['id', 'title'];
+      propGetKeys.forEach(key => properties[key] = activeWin.meta_window[`get_${key}`]?.());
+      // const propAllowsKeys = ['move', 'resize'];
+      // propAllowsKeys.forEach(key => properties[key] = activeWin.meta_window[`allows_${key}`]?.());
+      const propKeys = ['width', 'height', 'x', 'y', 'maximized_horizontally', 'maximized_vertically'];
       propKeys.forEach(key => properties[key] = Reflect.get(activeWin, key));
+      const propMetaKeys = ['maximized_horizontally', 'maximized_vertically'];
+      propMetaKeys.forEach(key => properties[key] = Reflect.get(activeWin.meta_window, key));
     }
 
     return JSON.stringify(properties);

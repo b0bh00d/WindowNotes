@@ -75,6 +75,8 @@ protected:  // methods
     void            closeEvent(QCloseEvent *event);
 
 private slots:
+    void            slot_build_tray_menu();
+
     void            slot_tab_entered(NoteTab* id);
     void            slot_tab_exited(NoteTab* id);
     void            slot_tab_LMB_down(NoteTab* id, QMouseEvent* event);
@@ -239,8 +241,6 @@ private:    // methods
     void            restore_window_data(QWidget* window);
     int             ask_question(const QString& question, bool with_cancel = false, const QString& title = "WindowNotes: Question", QMessageBox::Icon icon = QMessageBox::Question, QStringList buttons = QStringList());
 
-    void            build_tray_menu();
-
     void            load_application_settings();
     void            save_application_settings();
     void            load_note_database();
@@ -248,14 +248,14 @@ private:    // methods
     void            purge_empty_contexts();
     void            save_note_database();
 
-    void            recache_sound(int sound, SoundLineEdit* control);
-    void            cache_sounds();
-    void            set_sound_states();
-
     Context*        locate_context(bool literal = false);
     Context*        locate_context(const QString& context_id);
 
     void            populate_note_tree();
+
+    void            recache_sound(int sound, SoundLineEdit* control);
+    void            cache_sounds();
+    void            set_sound_states();
 
 #ifdef QT_WIN
     void            hook_global_keyboard_event();
@@ -266,10 +266,10 @@ private:    // methods
 
     void            make_active_window(WId win_id);
 #endif
-#ifdef QT_LINUX
-    void            lnx_ignore_events();
-    void            lnx_regard_events();
-#endif
+// #ifdef QT_LINUX
+//     void            linux_ignore_events();
+//     void            linux_regard_events();
+// #endif
 
 private:    // data members
     Ui::MainWindow*     ui;
@@ -289,6 +289,8 @@ private:    // data members
 
     QPoint              event_pos;
 
+    QVector<QString>    sound_files;
+
 #ifdef QT_WIN
     HHOOK               keyboard_hook_handle{0};
     HHOOK               mouse_hook_handle{0};
@@ -302,11 +304,12 @@ private:    // data members
 
     QChar               add_hook_key{DEFAULT_ADD_KEY};
     void                win_get_active_rect();
+
+    QVector<QByteArray> sound_cache;
 #endif
 #ifdef QT_LINUX
     WindowEventsPtr     m_window_events;
 
-    bool                report_events{true};
     uint                focus_window_handle{0};
 #endif
 
@@ -361,9 +364,6 @@ private:    // data members
     MimeData*           drag_mime_data{nullptr};
     QMap<NoteTab*, QString>    drag_temp_files;
     bool                did_drag_and_drop{false};
-
-    QVector<QString>    sound_files;
-    QVector<QByteArray> sound_cache;
 
     TreeItem            context_item;
 

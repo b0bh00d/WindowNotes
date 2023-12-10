@@ -8,6 +8,8 @@
 #include <QtCore/QProcess>
 #include <QtCore/QSharedPointer>
 
+#include <QtDBus/QtDBus>
+
 #include "ActiveWindow.h"
 
 class WindowEvents : public QObject
@@ -31,12 +33,10 @@ public:
     struct WindowData
     {
         Action action{Action::None};
-        QString window_id;
+        quint32 window_id{0};
         QString title;
-        qint32 abs_top{0};
-        qint32 abs_left{0};
-        qint32 rel_top{0};
-        qint32 rel_left{0};
+        qint32 top{0};
+        qint32 left{0};
         qint32 width{0};
         qint32 height{0};
     };
@@ -56,6 +56,14 @@ private slots:
     void    slot_process();
 
 private:
+    using InterfacePtr = QSharedPointer<QDBusInterface>;
+
+    bool    m_process_events{false};
+
+    bool    m_qdbus_available{false};
+    InterfacePtr    m_dbus_i;
+    // QDBusServiceWatcher*    m_service_watcher{nullptr};
+
     ActiveWindowPtr m_active_window;
 
     QQueue<QString> m_queue;

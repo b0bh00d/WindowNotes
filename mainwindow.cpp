@@ -19,6 +19,10 @@
 #include "ui_mainwindow.h"
 #include "exportdialog.h"
 
+#ifdef QT_LINUX
+#include "linux/WindowEventsSingleton.h"
+#endif
+
 static const QString& settings_version = "1.0";
 
 MainWindow* main_window = nullptr;
@@ -193,7 +197,7 @@ MainWindow::MainWindow(QWidget *parent)
     trayIcon->setIcon(QIcon(":/images/Pencil.png"));
     trayIcon->setToolTip(tr("WindowNotes"));
 
-    build_tray_menu();
+    slot_build_tray_menu();
 
     clipboard_timer = new QTimer(this);
     connected = connect(clipboard_timer, &QTimer::timeout, this, &MainWindow::slot_clipboard_ttl);
@@ -305,7 +309,7 @@ void MainWindow::slot_tab_LMB_move(NoteTab* id, QMouseEvent* event)
     unhook_global_win_event();
 #endif
 #ifdef QT_LINUX
-    lnx_ignore_events();
+    WindowEventsSingleton::instance()->winEvents()->stop();
 #endif
 
     hide_notetabs();
@@ -323,7 +327,7 @@ void MainWindow::slot_tab_LMB_move(NoteTab* id, QMouseEvent* event)
     hook_global_keyboard_event();
 #endif
 #ifdef QT_LINUX
-    lnx_regard_events();
+    WindowEventsSingleton::instance()->winEvents()->start();
 #endif
 
     // NOTE: these calls to arrange and display will render the 'id' pointer
@@ -372,12 +376,14 @@ void MainWindow::slot_tab_LMB_up(NoteTab* id, QMouseEvent* /*event*/)
 
 void MainWindow::slot_tab_RMB(NoteTab* id, QMouseEvent* event)
 {
-    TabsListIter tabs_iter;
+    if(!current_context)
+        return;
 
     add_log_entry(QString("Note: 0x%1").arg(reinterpret_cast<size_t>(id),8,16,QChar('0')), "Right Button", "");
 
-    if(!current_context)
-        return;
+#ifdef QT_LINUX
+    WindowEventsSingleton::instance()->winEvents()->stop();
+#endif
 
     in_context_menu = true;
 
@@ -436,19 +442,22 @@ void MainWindow::slot_tab_RMB(NoteTab* id, QMouseEvent* event)
 
                 QDomElement element = id->get_note_node();
                 note_clipboard->content = element.firstChild().nodeValue();
+
+                QClipboard* clipboard = qApp->clipboard();
+                clipboard->setText(note_clipboard->content);
             }
 
             current_tab->set_unselected();
             in_context_menu = false;
 
-            build_tray_menu();
+            QTimer::singleShot(0, this, &MainWindow::slot_build_tray_menu);
 
             break;
 
         case NOTEACTION_DELETE_ALL:
             current_tab->set_unselected();
 
-            for(tabs_iter = tabs_list->begin();tabs_iter != tabs_list->end();tabs_iter++)
+            for(auto tabs_iter = tabs_list->begin();tabs_iter != tabs_list->end();tabs_iter++)
             {
                 NoteTab* nt = *tabs_iter;
                 connected = connect(nt, &NoteTab::signal_tab_faded, this, &MainWindow::slot_multiple_tab_faded);
@@ -464,6 +473,10 @@ void MainWindow::slot_tab_RMB(NoteTab* id, QMouseEvent* event)
             in_context_menu = false;
             break;
     }
+
+#ifdef QT_LINUX
+    WindowEventsSingleton::instance()->winEvents()->start();
+#endif
 }
 
 void MainWindow::slot_tab_flashed(NoteTab* /*id*/)
@@ -783,6 +796,7 @@ NoteTab* MainWindow::add_notetab(int icon)
 NoteTab* MainWindow::append_addtab()
 {
     NoteTab* nt = new NoteTab(9999, this);
+    nt->set_tool_tip(tr("Add new note"));
     nt->set_opacities(selected_opacity, unselected_opacity);
     bool connected = connect(nt, &NoteTab::signal_tab_LMB_up, this, &MainWindow::slot_process_add);
     assert(connected);
@@ -808,7 +822,10 @@ int MainWindow::arrange_notetabs(bool hide_and_show)
     QBitArray sides(4);
 
     QDesktopWidget desk;
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
     QRect r = desk.screenGeometry();
+#pragma GCC diagnostic pop
 #ifdef QT_WIN
     win_get_active_rect();
 #endif
@@ -867,9 +884,9 @@ int MainWindow::arrange_notetabs(bool hide_and_show)
     {
         if(sides[rotation[i]])
         {
-            int left, top;
-            int left_increment, top_increment;
-            int side_max;
+            int left{0}, top{0};
+            int left_increment{0}, top_increment{0};
+            int side_max{0};
 
             switch(rotation[i])
             {
@@ -945,7 +962,7 @@ void MainWindow::slot_quit()
     DeregisterShellHookWindow((HWND)winId());
 #endif
 #ifdef QT_LINUX
-    lnx_ignore_events();
+    WindowEventsSingleton::instance()->winEvents()->stop();
 #endif
 
     if(note_clipboard)
@@ -1005,7 +1022,7 @@ void MainWindow::closeEvent(QCloseEvent* event)
         hook_global_keyboard_event();
 #endif
 #ifdef QT_LINUX
-        lnx_regard_events();
+        WindowEventsSingleton::instance()->winEvents()->start();
 #endif
         event->ignore();
     }
@@ -1088,7 +1105,7 @@ void MainWindow::slot_process_add()
     unhook_global_keyboard_event();
 #endif
 #ifdef QT_LINUX
-    lnx_ignore_events();
+    WindowEventsSingleton::instance()->winEvents()->stop();
 #endif
     hide_notetabs();
 
@@ -1186,7 +1203,7 @@ void MainWindow::slot_close_add_window()
     hook_global_keyboard_event();
 #endif
 #ifdef QT_LINUX
-    lnx_regard_events();
+    WindowEventsSingleton::instance()->winEvents()->start();
 #endif
 }
 
@@ -1202,7 +1219,7 @@ void MainWindow::slot_restore()
     unhook_global_keyboard_event();
 #endif
 #ifdef QT_LINUX
-    lnx_ignore_events();
+    WindowEventsSingleton::instance()->winEvents()->stop();
 #endif
 
     populate_note_tree();
@@ -1304,12 +1321,12 @@ void MainWindow::slot_menu_action(QAction* action)
     }
 }
 
-void MainWindow::build_tray_menu()
+void MainWindow::slot_build_tray_menu()
 {
     if(trayIconMenu)
     {
         disconnect(trayIconMenu, &QMenu::triggered, this, &MainWindow::slot_menu_action);
-        delete trayIconMenu;
+        trayIconMenu->deleteLater();
     }
 
     options_action  = new QAction(QIcon(":/images/Options.png"), tr("Edit &Settings..."), this);
@@ -1710,6 +1727,7 @@ void MainWindow::slot_enable_sound_effects()
 
 void MainWindow::recache_sound(int sound, SoundLineEdit* control)
 {
+#ifdef QT_WIN
     QString text = control->adjusted_text();
     if(text != sound_files[sound])
     {
@@ -1729,6 +1747,11 @@ void MainWindow::recache_sound(int sound, SoundLineEdit* control)
 
         settings_modified = true;
     }
+#endif
+#ifdef QT_LINUX
+    Q_UNUSED(sound);
+    Q_UNUSED(control);
+#endif
 }
 
 void MainWindow::slot_delete_sound_file_changed()
@@ -1753,6 +1776,7 @@ void MainWindow::slot_close_sound_file_changed()
 
 void MainWindow::cache_sounds()
 {
+#ifdef QT_WIN
     sound_cache.clear();
 
     for(int i = 0;i < SOUND_MAX;i++)
@@ -1770,6 +1794,7 @@ void MainWindow::cache_sounds()
             sound_file.close();
         }
     }
+#endif
 }
 
 void MainWindow::slot_clear_delete_sound()
