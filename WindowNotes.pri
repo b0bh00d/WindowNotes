@@ -25,14 +25,14 @@ win32 {
 unix:!mac {
     HEADERS += linux/Queue.h \
                linux/WindowEvents.h \
-               linux/ActiveWindow.h \
+#               linux/ActiveWindow.h \
                linux/singleton.h \
                linux/events.h \
                linux/events_types.h \
                linux/WindowEventsSingleton.h
     SOURCES += linux/events.cpp \
                linux/WindowEvents.cpp \
-               linux/ActiveWindow.cpp \
+#               linux/ActiveWindow.cpp \
                linux/WindowEventsSingleton.cpp
 }
 
