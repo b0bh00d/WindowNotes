@@ -10,7 +10,7 @@
 
 #include <QtDBus/QtDBus>
 
-#include "ActiveWindow.h"
+// #include "ActiveWindow.h"
 
 class WindowEvents : public QObject
 {
@@ -64,7 +64,7 @@ private:
     InterfacePtr    m_dbus_i;
     // QDBusServiceWatcher*    m_service_watcher{nullptr};
 
-    ActiveWindowPtr m_active_window;
+    // ActiveWindowPtr m_active_window;
 
     QQueue<QString> m_queue;
 
