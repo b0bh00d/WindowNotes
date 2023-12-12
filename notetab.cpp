@@ -95,12 +95,11 @@ void NoteTab::paintEvent(QPaintEvent* /*paintEvent*/)
 
 void NoteTab::enterEvent(QEvent* /*event*/)
 {
-#ifdef QT_LINUX
-    WindowEventsSingleton::instance()->winEvents()->stop();
-#endif
-
     if(!selected)
     {
+#ifdef QT_LINUX
+        WindowEventsSingleton::instance()->winEvents()->stop();
+#endif
         enter_point = QCursor::pos();
 
         if(!my_note.isNull())
@@ -134,11 +133,11 @@ void NoteTab::leaveEvent(QEvent* /*event*/)
         opacity = unselected_opacity;
         emit signal_tab_exited(this);
         update();
-    }
 
 #ifdef QT_LINUX
-    WindowEventsSingleton::instance()->winEvents()->start();
+        WindowEventsSingleton::instance()->winEvents()->start();
 #endif
+    }
 }
 
 void NoteTab::mousePressEvent(QMouseEvent* event)

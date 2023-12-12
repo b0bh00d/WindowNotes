@@ -58,8 +58,6 @@ private slots:
 private:
     using InterfacePtr = QSharedPointer<QDBusInterface>;
 
-    bool    m_process_events{false};
-
     bool    m_qdbus_available{false};
     InterfacePtr    m_dbus_i;
     // QDBusServiceWatcher*    m_service_watcher{nullptr};
