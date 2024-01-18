@@ -18,16 +18,30 @@ to paste its contents.
 This project was developed with, and tested under, Qt versions 5.6.2.
 
 ### Current status
-The system is quite functional, and has been in "production" use on my desktop
+The system is quite functional, and has been in "production" use on my Windows desktop
 since 2013.
 
 This system is designed for use with the Microsoft Windows desktop, and has been
-tested under Windows 7.  Since I probably won't ever be upgrading to a version
-of Windows higher than seven, I cannot vouch for its functionality under newer
-versions, but expect it would function properly.
+tested under Windows 10.  I migrated my daily environment to Linux at the end of
+2023, so I have not tested under Windows 11.
 
-The window manager-specific code is isolated into its own module, so converting
-it to other desktops (e.g., Linux) should not be an insurmountable task.
+The window manager-specific code is largely isolated into its own module, so
+converting it should not be an insurmountable task.
+
+#### Linux
+I recently converted WindowsNotes to Linux.  It currently functions by using a
+GNOME Shell extension to provide it with window-manager information (currently
+focused window, geometry, title, etc.) on a DBus channel, which would otherwise
+come directly from the Win32 API under Windows.  It also relies on an "Add" button
+on Linux, instead of using a global key hook, so every window on the desktop has
+an "Add" decorator, even if it doesn't have notes assigned.
+
+It is quite functional right now, but the main application is having to poll
+the Shell extension (at 100ms intervals) in order to feel responsive.  I will
+continue to fiddle with this arrangement, however, to see if I can figure out how
+to "push" the information from the extension, making WindowsNotes more event-
+driven, instead of high-speed polling for it from the application.  There's not
+a lot of hand-holding material out there on writing robust GNOME Shell extensions.
 
 ## Usage
 WindowsNotes is a task-tray application.  Run the main application, and then
