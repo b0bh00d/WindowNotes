@@ -1,3 +1,5 @@
+#include <QtCore/QDir>
+
 #include <QtWidgets/QApplication>
 #include <QtWidgets/QSystemTrayIcon>
 #include <QtWidgets/QMessageBox>
@@ -29,6 +31,14 @@ int main(int argc, char *argv[])
 
     MainWindow window;
     window.hide();
+
+#ifdef QT_LINUX
+    // make sure the audio system can find the sound files
+    auto items = QString(argv[0]).split('/');
+    items.pop_back();
+    auto path = items.join('/');
+    QDir::setCurrent(path);
+#endif
 
     return app.exec();
 }

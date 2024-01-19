@@ -111,7 +111,7 @@ void NoteTab::enterEvent(QEvent* /*event*/)
             if(use_mask && my_note.hasAttribute("mask"))
                 QToolTip::showText(enter_point, my_note.attribute("mask"), nullptr, QRect(), 600000);
             else
-                QToolTip::showText(enter_point, my_note.firstChild().nodeValue(), nullptr, QRect(), 600000);
+                QToolTip::showText(enter_point, QByteArray::fromPercentEncoding(my_note.firstChild().nodeValue().toUtf8()), nullptr, QRect(), 600000);
         }
         else if(!my_tool_tip.isEmpty())
             QToolTip::showText(enter_point, my_tool_tip, nullptr, QRect(), 600000);

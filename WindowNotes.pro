@@ -1,21 +1,24 @@
-QT += widgets xml multimedia dbus
+QT += widgets xml dbus
 TARGET = WindowNotes
 TEMPLATE = app
 
-RESOURCES += ./WindowNotes.qrc
 
 mac {
     DEFINES += QT_OSX
 }
 
 unix:!mac {
+    RESOURCES += ./linux.qrc
     DEFINES += QT_LINUX
+    # QT += multimedia
     #QT += x11extras
     QMAKE_CXXFLAGS_WARN_ON += -Wno-reorder
-    #LIBS += -lX11
+    LIBS += -lpthread -lm -ldl
+    INCLUDEPATH += ../miniaudio
 }
 
 win32 {
+    RESOURCES += ./WindowNotes.qrc
     DEFINES += QT_WIN
     LIBS += -lwinmm -ladvapi32
 }

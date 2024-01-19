@@ -239,6 +239,10 @@ void MainWindow::slot_tab_exited(NoteTab* id)
 
 void MainWindow::slot_tab_LMB_down(NoteTab* /*id*/, QMouseEvent* event)
 {
+#ifdef QT_LINUX
+    WindowEventsSingleton::instance()->winEvents()->stop();
+#endif
+
     notetab_clicked = true;
     did_drag_and_drop = false;
     drag_start_position = event->pos();
@@ -252,7 +256,7 @@ void MainWindow::slot_create_data(const QString &mime_type)
     QString note_text;
 
     QDomElement note_node = drag_notetab_id->get_note_node();
-    note_text = note_node.firstChild().nodeValue();
+    note_text = QByteArray::fromPercentEncoding(note_node.firstChild().nodeValue().toUtf8());
 
     if(mime_type == "text/uri-list")
     {
@@ -346,32 +350,36 @@ void MainWindow::slot_tab_LMB_move(NoteTab* id, QMouseEvent* event)
 void MainWindow::slot_tab_LMB_up(NoteTab* id, QMouseEvent* /*event*/)
 {
     notetab_clicked = false;
-    if(did_drag_and_drop)
-        return;
-
-    os_play_sound(SOUND_COPY);
-
-    add_log_entry(QString("Note: 0x%1").arg(reinterpret_cast<size_t>(id),8,16,QChar('0')), "Left Button", "");
-
-    QClipboard* clipboard = qApp->clipboard();
-    QDomElement note_node = id->get_note_node();
-    clipboard->setText(note_node.firstChild().nodeValue());
-
-    connect(id, &NoteTab::signal_tab_flashed, this, &MainWindow::slot_tab_flashed);
-    tab_animating = true;
-    id->flash();
-
-    if(note_node.hasAttribute("clipboard_ttl") && note_node.attribute("clipboard_ttl").toInt())
+    if(!did_drag_and_drop)
     {
-        if(note_node.hasAttribute("clipboard_seconds"))
+        os_play_sound(SOUND_COPY);
+
+        add_log_entry(QString("Note: 0x%1").arg(reinterpret_cast<size_t>(id),8,16,QChar('0')), "Left Button", "");
+
+        QClipboard* clipboard = qApp->clipboard();
+        QDomElement note_node = id->get_note_node();
+        clipboard->setText(QByteArray::fromPercentEncoding(note_node.firstChild().nodeValue().toUtf8()));
+
+        connect(id, &NoteTab::signal_tab_flashed, this, &MainWindow::slot_tab_flashed);
+        tab_animating = true;
+        id->flash();
+
+        if(note_node.hasAttribute("clipboard_ttl") && note_node.attribute("clipboard_ttl").toInt())
         {
-            int note_ttl = note_node.attribute("clipboard_seconds").toInt();
-            if(note_ttl > 0)
-                clipboard_ttl_timeout = note_ttl;
+            if(note_node.hasAttribute("clipboard_seconds"))
+            {
+                int note_ttl = note_node.attribute("clipboard_seconds").toInt();
+                if(note_ttl > 0)
+                    clipboard_ttl_timeout = note_ttl;
+            }
         }
+
+        clipboard_timestamp = QDateTime::currentMSecsSinceEpoch();
     }
 
-    clipboard_timestamp = QDateTime::currentMSecsSinceEpoch();
+#ifdef QT_LINUX
+    WindowEventsSingleton::instance()->winEvents()->start();
+#endif
 }
 
 void MainWindow::slot_tab_RMB(NoteTab* id, QMouseEvent* event)
@@ -383,6 +391,7 @@ void MainWindow::slot_tab_RMB(NoteTab* id, QMouseEvent* event)
 
 #ifdef QT_LINUX
     WindowEventsSingleton::instance()->winEvents()->stop();
+    bool reenable_polling = true;
 #endif
 
     in_context_menu = true;
@@ -424,7 +433,9 @@ void MainWindow::slot_tab_RMB(NoteTab* id, QMouseEvent* event)
             assert(connected);
             tab_animating = true;
             current_tab->fade();
-
+#ifdef QT_LINUX
+            reenable_polling = false;
+#endif
             os_play_sound(SOUND_DELETE);
 
             break;
@@ -433,6 +444,9 @@ void MainWindow::slot_tab_RMB(NoteTab* id, QMouseEvent* event)
             // leave 'in_context_menu' set to protect 'current_tab' until
             // editing is complete
             QTimer::singleShot(200, this, &MainWindow::slot_edit_note);
+#ifdef QT_LINUX
+            reenable_polling = false;
+#endif
             break;
 
         case NOTEACTION_COPY:
@@ -441,7 +455,7 @@ void MainWindow::slot_tab_RMB(NoteTab* id, QMouseEvent* event)
                     note_clipboard = new NoteData();
 
                 QDomElement element = id->get_note_node();
-                note_clipboard->content = element.firstChild().nodeValue();
+                note_clipboard->content = QByteArray::fromPercentEncoding(element.firstChild().nodeValue().toUtf8());
 
                 QClipboard* clipboard = qApp->clipboard();
                 clipboard->setText(note_clipboard->content);
@@ -464,6 +478,9 @@ void MainWindow::slot_tab_RMB(NoteTab* id, QMouseEvent* event)
                 assert(connected);
                 nt->fade();
             }
+#ifdef QT_LINUX
+            reenable_polling = false;
+#endif
 
             os_play_sound(SOUND_DELETE);
             break;
@@ -475,7 +492,8 @@ void MainWindow::slot_tab_RMB(NoteTab* id, QMouseEvent* event)
     }
 
 #ifdef QT_LINUX
-    WindowEventsSingleton::instance()->winEvents()->start();
+    if(reenable_polling)
+        WindowEventsSingleton::instance()->winEvents()->start();
 #endif
 }
 
@@ -490,6 +508,7 @@ void MainWindow::slot_single_tab_faded(NoteTab* id)
 
     hide_notetabs();
 
+#ifdef QT_WIN
     if(current_context->remove_note(id->get_note_node()) == 0)
     {
         delete_notetabs();
@@ -510,31 +529,56 @@ void MainWindow::slot_single_tab_faded(NoteTab* id)
         arrange_notetabs();
         display_notetabs();
     }
+#endif
+#ifdef QT_LINUX
+    // we never delete_notetabs() on Linux, because we always
+    // have the 'add tab' displayed on every context
+    current_context->remove_note(id->get_note_node());
+    arrange_notetabs();
+    display_notetabs();
+#endif
 
     save_note_database();
 
     in_context_menu = false;
+
+#ifdef QT_LINUX
+    WindowEventsSingleton::instance()->winEvents()->start();
+#endif
 }
 
 void MainWindow::slot_multiple_tab_faded(NoteTab* id)
 {
-    if(current_context->remove_note(id->get_note_node()) != 0)
-        return;
+    if(current_context->remove_note(id->get_note_node()) == 0)
+    {
+        tab_animating = false;
 
-    tab_animating = false;
+#ifdef QT_WIN
+        delete_notetabs();
 
-    delete_notetabs();
+        QDomElement root = note_database->documentElement();
+        root.removeChild(current_context->get_node());
+        contexts_list.removeAll(current_context);
 
-    QDomElement root = note_database->documentElement();
-    root.removeChild(current_context->get_node());
-    contexts_list.removeAll(current_context);
+        delete current_context;
+        current_context = (Context*)0;
+#endif
+#ifdef QT_LINUX
+        // we never delete_notetabs() on Linux, because we always
+        // have the 'add tab' displayed on every context
+        current_context->remove_note(id->get_note_node());
+        arrange_notetabs();
+        display_notetabs();
+#endif
 
-    delete current_context;
-    current_context = (Context*)0;
-
-    save_note_database();
+        save_note_database();
+    }
 
     in_context_menu = false;
+
+#ifdef QT_LINUX
+    WindowEventsSingleton::instance()->winEvents()->start();
+#endif
 }
 
 void MainWindow::slot_pu_edit_note()
@@ -559,6 +603,8 @@ void MainWindow::slot_pu_clear_notes()
 
 void MainWindow::slot_edit_note()
 {
+    // Linux: Polling was turned off (and left off) in slot_tab_RMB()
+
     if(note_edit_window)
         delete note_edit_window;
 
@@ -584,7 +630,7 @@ void MainWindow::slot_edit_note()
     else
         note_data.context = current_context->context_id;
 
-    note_data.content = note_node.firstChild().nodeValue();
+    note_data.content = QByteArray::fromPercentEncoding(note_node.firstChild().nodeValue().toUtf8());
 
     note_edit_window->set_note_data(note_data);
 
@@ -624,6 +670,11 @@ void MainWindow::slot_close_edit_window()
 
     current_tab->set_unselected();
     in_context_menu = false;
+
+#ifdef QT_LINUX
+    // Re-enable from slot_tab_RMB()
+    WindowEventsSingleton::instance()->winEvents()->start();
+#endif
 }
 
 void MainWindow::add_log_entry(const QString& col1, const QString& col2, const QString& col3)
@@ -731,7 +782,7 @@ void MainWindow::slot_export_notes()
             QString note_content;
             int icon = (*iter)->get_icon();
 
-            note_content = note.firstChild().nodeValue();
+            note_content = QByteArray::fromPercentEncoding(note.firstChild().nodeValue().toUtf8());
 
             if(format == ExportDialog::FORMAT_CSV)
             {
@@ -1509,7 +1560,7 @@ void MainWindow::load_note_database()
     int errorLine;
     int errorColumn;
 
-    if(!note_database->setContent(&file, true, &errorStr, &errorLine, &errorColumn))
+    if(!note_database->setContent(&file, false, &errorStr, &errorLine, &errorColumn))
     {
         QMessageBox::information(window(), tr("WindowNotes"),
                                  tr("Notes database parse error at line %1, column %2:\n%3")
@@ -1998,7 +2049,7 @@ void MainWindow::populate_note_tree()
                     if(!_node.nodeName().compare("Note"))
                     {
                         QDomElement _element = _node.toElement();
-                        QString value = _element.firstChild().nodeValue();
+                        QString value = QByteArray::fromPercentEncoding(_element.firstChild().nodeValue().toUtf8());
                         // make carriage return and newlines visible and editable
                         value.replace("\r", "\\r");
                         value.replace("\n", "\\n");
@@ -2117,7 +2168,7 @@ void MainWindow::slot_database_copy_note()
     QDomElement note_node = dom_node.toElement();
 
     QClipboard* clipboard = qApp->clipboard();
-    clipboard->setText(note_node.firstChild().nodeValue());
+    clipboard->setText(QByteArray::fromPercentEncoding(note_node.firstChild().nodeValue().toUtf8()));
 }
 
 void MainWindow::slot_edit_assign(QTreeWidgetItem* item, int col)

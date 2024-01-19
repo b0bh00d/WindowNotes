@@ -16,16 +16,24 @@
 #include "mainwindow.h"
 #include "WindowEventsSingleton.h"
 
+#define MINIAUDIO_IMPLEMENTATION
+#include "miniaudio.h"
+
+static ma_engine mini_engine;
+
 extern MainWindow* main_window;
 
 bool MainWindow::os_events_init()
 {
-    return true;
+    auto result = ma_engine_init(nullptr, &mini_engine);
+    return result == MA_SUCCESS;
 }
 
 void MainWindow::os_events_cleanup()
 {
     m_window_events->stop();
+
+    ma_engine_uninit(&mini_engine);
 }
 
 bool MainWindow::os_locate_instance()
@@ -60,11 +68,17 @@ void MainWindow::os_play_sound(int sound)
 {
     // https://gist.github.com/ghedo/963382
 
+    // QString s(sound_files[sound]);
+    // if(s.isEmpty())
+    //     s = QString(":/sounds/%1.wav").arg(sound + 1);
+
+    // QSound::play(s);
+
     QString s(sound_files[sound]);
     if(s.isEmpty())
-        s = QString(":/sounds/%1.wav").arg(sound + 1);
+        s = QString("./sounds/%1.wav").arg(sound + 1);
 
-    QSound::play(s);
+    ma_engine_play_sound(&mini_engine, s.toLatin1().constData(), nullptr);
 }
 
 void MainWindow::os_set_startup()

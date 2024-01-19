@@ -16,6 +16,7 @@
         <file>images/Note4.png</file>
         <file>images/Note5.png</file>
         <file>images/Note6.png</file>
+        <file>images/Note9999.png</file>
         <file>images/WindowsKey.png</file>
         <file>images/WindowImage.png</file>
         <file>images/RMFR.png</file>
@@ -27,10 +28,5 @@
         <file>images/EditBanner.png</file>
         <file>images/ExportBanner.png</file>
         <file>images/MotherCatAndKitten.png</file>
-        <file>sounds/1.wav</file>
-        <file>sounds/2.wav</file>
-        <file>sounds/3.wav</file>
-        <file>sounds/4.wav</file>
-        <file>sounds/5.wav</file>
     </qresource>
 </RCC>

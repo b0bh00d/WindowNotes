@@ -55,7 +55,7 @@ int Context::get_icon() const
 void Context::add_note(const NoteData& data)
 {
     QDomElement child = my_doc->createElement("Note");
-    QDomText child_text = my_doc->createTextNode(data.content);
+    QDomText child_text = my_doc->createTextNode(data.content.toUtf8().toPercentEncoding());
     child.appendChild(child_text);
     my_node.appendChild(child);
 }
